@@ -2,7 +2,8 @@
   import * as Form from "$lib/components/ui/form";
   import { Input } from "$lib/components/ui/input";
   import { Button } from "$lib/components/ui/button";
-  import { Eye, EyeOff } from "@lucide/svelte";
+  import Eye from "@lucide/svelte/icons/eye";
+  import EyeOff from "@lucide/svelte/icons/eye-off";
   import { cn } from "$lib/utils.js";
   import type { SuperForm } from "sveltekit-superforms";
 
