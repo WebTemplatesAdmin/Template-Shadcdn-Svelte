@@ -1,4 +1,25 @@
 import * as iconos from "@lucide/svelte";
+import ShoppingCart from "@lucide/svelte/icons/shopping-cart";
+import ShoppingBasket from "@lucide/svelte/icons/shopping-basket";
+import TrendingUp from "@lucide/svelte/icons/trending-up";
+import TrendingUpDown from "@lucide/svelte/icons/trending-up-down";
+import LineChart from "@lucide/svelte/icons/line-chart";
+import BarChart3 from "@lucide/svelte/icons/bar-chart-3";
+import Users from "@lucide/svelte/icons/users";
+import Users2 from "@lucide/svelte/icons/users-2";
+import UserCog from "@lucide/svelte/icons/user-cog";
+import Settings from "@lucide/svelte/icons/settings";
+import Settings2 from "@lucide/svelte/icons/settings-2";
+import SlidersHorizontal from "@lucide/svelte/icons/sliders-horizontal";
+import HelpCircle from "@lucide/svelte/icons/help-circle";
+import CircleHelp from "@lucide/svelte/icons/circle-help";
+import Bell from "@lucide/svelte/icons/bell";
+import Search from "@lucide/svelte/icons/search";
+import Menu from "@lucide/svelte/icons/menu";
+import X from "@lucide/svelte/icons/x";
+import LogOut from "@lucide/svelte/icons/log-out";
+import User from "@lucide/svelte/icons/user";
+import ChevronDown from "@lucide/svelte/icons/chevron-down";
 import type { LucideIcon } from "@lucide/svelte";
 
 /**

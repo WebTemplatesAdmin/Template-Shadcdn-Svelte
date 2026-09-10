@@ -1,18 +1,19 @@
-import {
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  TrendingUp,
-  Users,
-  Settings,
-  HelpCircle,
-  type LucideIcon,
-} from "@lucide/svelte";
+import LayoutDashboard from "@lucide/svelte/icons/layout-dashboard";
+import Package from "@lucide/svelte/icons/package";
+import ShoppingCart from "@lucide/svelte/icons/shopping-cart";
+import TrendingUp from "@lucide/svelte/icons/trending-up";
+import Users from "@lucide/svelte/icons/users";
+import Settings from "@lucide/svelte/icons/settings";
+import HelpCircle from "@lucide/svelte/icons/help-circle";
+import type { Icon as LucideIcon } from "@lucide/svelte";
+import type { Component } from "svelte";
+
+
 
 export type NavItem = {
   title: string;
   url: string;
-  icon: LucideIcon;
+  icon: Component;
   badge?: string;
 };
 
