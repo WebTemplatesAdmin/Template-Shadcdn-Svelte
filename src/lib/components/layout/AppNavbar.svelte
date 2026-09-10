@@ -6,9 +6,9 @@
   import { Input } from "$lib/components/ui/input/index.js";
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   // Iconos FIJOS: import directo (sin getIcon, sin svelte:component)
-    import Search from "@lucide/svelte/icons/search";
-    import Bell from "@lucide/svelte/icons/bell";
-    import Menu from "@lucide/svelte/icons/menu";
+  import Search from "@lucide/svelte/icons/search";
+  import Bell from "@lucide/svelte/icons/bell";
+  import Menu from "@lucide/svelte/icons/menu";
   import UserNav from "./UserNav.svelte";
 
   const notificaciones = [
