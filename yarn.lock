@@ -124,10 +124,10 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@lucide/svelte@^1.43.0":
-  version "1.43.0"
-  resolved "https://registry.yarnpkg.com/@lucide/svelte/-/svelte-1.43.0.tgz#d49ee32ae2b5ff18176028c249bacd18e05eb142"
-  integrity sha512-IfxS4hVxojnafzFKkQGzndoM6yUODmGc07I0h6R/1SlwDoZwd/5gl90zHz+fTaBVLZo7uE5sPDySFGiK4iMQKw==
+"@lucide/svelte@^1.45.0":
+  version "1.45.0"
+  resolved "https://registry.yarnpkg.com/@lucide/svelte/-/svelte-1.45.0.tgz#2b0ece47348d58cf572a838163fc7b9388df6db0"
+  integrity sha512-SBqLvcYGEDz82Lwz7meR4qM+SGeDKRU/RBo8BhAhARNUzIXTrykbFLabW9X1Fokp01Yw2kOFx/AsLUUIxj0NLA==
 
 "@napi-rs/wasm-runtime@^1.1.4":
   version "1.2.3"
@@ -526,10 +526,10 @@ axobject-query@^4.1.0:
   resolved "https://registry.yarnpkg.com/axobject-query/-/axobject-query-4.1.0.tgz#28768c76d0e3cff21bc62a9e2d0b6ac30042a1ee"
   integrity sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==
 
-bits-ui@^2.16.3:
-  version "2.19.0"
-  resolved "https://registry.yarnpkg.com/bits-ui/-/bits-ui-2.19.0.tgz#1be3d262ec9fc96a95b9baa6e55f126fb797dfcb"
-  integrity sha512-dHDm5Jw2NZJgLRvHAwPeuR4BnZij+AqTIq33OqVfo+qiMXontoC/yIvGT5TZaviv7OuBdJ2QUy2JPQ2yKBvF6w==
+bits-ui@^2.18.0:
+  version "2.19.2"
+  resolved "https://registry.yarnpkg.com/bits-ui/-/bits-ui-2.19.2.tgz#e29b32c59e99bcdd877521bc22b68dcc18d27819"
+  integrity sha512-W9upilTmLTIWjuVAD6Ta7XoS6gxRflmCQnXamj+WN1eYxZecghqGENpuSMAKQmVENMLXhh85BZb04LCrBd2+Ng==
   dependencies:
     "@floating-ui/core" "^1.7.1"
     "@floating-ui/dom" "^1.7.1"
