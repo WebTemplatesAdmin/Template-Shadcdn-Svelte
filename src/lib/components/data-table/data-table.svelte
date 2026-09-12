@@ -48,7 +48,7 @@
             {#each headerGroup.headers as header (header.id)}
               <Table.Head
                 colspan={header.colSpan}
-                class="thead-custom-textcolor border-r border-white/20 last:border-r-0 py-1"
+                class="text-black !font-extrabold border-r border-white/20 last:border-r-0 py-1"
               >
                 {#if !header.isPlaceholder}
                   <FlexRender {header} />
@@ -129,7 +129,7 @@
 
 <style>
   :global(.thead-custom-bg) {
-    background-color: #f0f0f0 !important;
+    background-color: #f8f8f8 !important;
   }
   :global(.thead-custom-textcolor) {
     color: #000 !important;

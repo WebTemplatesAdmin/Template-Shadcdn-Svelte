@@ -24,8 +24,11 @@ export const columns: ColumnDef<DataTableFeatures, Producto>[] = [
     header: ({ table }) =>
       renderComponent(Checkbox, {
         checked: table.getIsAllPageRowsSelected(),
-        indeterminate: table.getIsSomePageRowsSelected() && !table.getIsAllPageRowsSelected(),
-        onCheckedChange: (value: boolean) => table.toggleAllPageRowsSelected(!!value),
+        indeterminate:
+          table.getIsSomePageRowsSelected() &&
+          !table.getIsAllPageRowsSelected(),
+        onCheckedChange: (value: boolean) =>
+          table.toggleAllPageRowsSelected(!!value),
         "aria-label": "Seleccionar todo",
       }),
     cell: ({ row }) =>
@@ -33,7 +36,8 @@ export const columns: ColumnDef<DataTableFeatures, Producto>[] = [
         checked: row.getIsSelected(),
         onCheckedChange: (value: boolean) => row.toggleSelected(!!value),
         "aria-label": "Seleccionar fila",
-        class: "data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+        class:
+          "data-[state=checked]:bg-primary data-[state=checked]:border-primary",
       }),
     enableSorting: false,
     enableHiding: false,
@@ -42,27 +46,49 @@ export const columns: ColumnDef<DataTableFeatures, Producto>[] = [
   // Columnas de datos
   {
     accessorKey: "name",
-    header: ({ column }) => renderComponent(ColumnHeader, { column, title: "Nombre" }),
+    header: ({ column }) =>
+      renderComponent(ColumnHeader, { column, title: "Nombre" }),
     enableColumnFilter: true,
   },
   {
     accessorKey: "category",
-    header: ({ column }) => renderComponent(ColumnHeader, { column, title: "Categoría" }),
+    header: ({ column }) =>
+      renderComponent(ColumnHeader, { column, title: "Categoría" }),
     enableColumnFilter: true,
   },
   {
     accessorKey: "price",
-    header: ({ column }) => renderComponent(ColumnHeader, { column, title: "Precio" }),
+    header: ({ column }) =>
+      renderComponent(ColumnHeader, { column, title: "Precio" }),
+    enableColumnFilter: true,
+    filterFn: (
+      row,
+      columnId,
+      filterValue: [number | undefined, number | undefined],
+    ) => {
+      const [min, max] = filterValue;
+      const valor = row.getValue(columnId) as number;
+      if (min !== undefined && valor < min) return false;
+      if (max !== undefined && valor > max) return false;
+      return true;
+    },
     cell: ({ getValue }) => {
       const raw = createRawSnippet<[]>(() => ({
-        render: () => `<span>$${(getValue() as number).toLocaleString()}</span>`,
+        render: () =>
+          `<span>$${(getValue() as number).toLocaleString()}</span>`,
       }));
       return renderSnippet(raw, []);
     },
   },
   {
     accessorKey: "stock",
-    header: ({ column }) => renderComponent(ColumnHeader, { column, title: "Stock" }),
+    header: ({ column }) =>
+      renderComponent(ColumnHeader, { column, title: "Stock" }),
+    enableColumnFilter: true,
+    filterFn: (row, columnId, filterValue: number) => {
+      const valor = row.getValue(columnId) as number;
+      return valor >= filterValue;
+    },
   },
 
   // Columna de acciones (editar, eliminar)

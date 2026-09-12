@@ -8,7 +8,12 @@
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import * as Select from "$lib/components/ui/select/index.js";
   import * as Popover from "$lib/components/ui/popover/index.js";
+  import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import SlidersHorizontal from "@lucide/svelte/icons/sliders-horizontal";
+  import MoreVertical from "@lucide/svelte/icons/more-vertical";
+  import ProductRail from "./product-rail.svelte";
+  import * as Sheet from "$lib/components/ui/sheet/index.js";
+  import * as Form from "$lib/components/ui/form/index.js";
 
   let { data } = $props();
 
@@ -68,130 +73,297 @@
       );
     table.getColumn("stock")?.setFilterValue(stockMinVal);
   }
+
+  let sheetCategoriaAbierto = $state(false);
 </script>
 
-<DataTable data={data.productos} {columns}>
-  {#snippet toolbar({ table })}
-    <div class="flex items-center gap-3">
-      <Input
-        placeholder="Buscar producto..."
-        value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-        oninput={(e) =>
-          table.getColumn("name")?.setFilterValue(e.currentTarget.value)}
-        class="max-w-sm"
-      />
+<div class="pr-16">
+  <div class="min-w-0 flex-1">
+    <DataTable data={data.productos} {columns}>
+      {#snippet toolbar({ table })}
+        <!-- ============ VERSIÓN MOBILE (< md) ============ -->
+        <div class="flex w-full flex-col gap-2 md:hidden">
+          <Input
+            placeholder="Buscar producto..."
+            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+            oninput={(e) =>
+              table.getColumn("name")?.setFilterValue(e.currentTarget.value)}
+          />
 
-      <!-- Filtro principal: Categoría -->
-      <Select.Root
-        type="single"
-        value={(table.getColumn("category")?.getFilterValue() as string) ?? ""}
-        onValueChange={(value) =>
-          table.getColumn("category")?.setFilterValue(value || undefined)}
-      >
-        <Select.Trigger class="h-9 w-[160px]">
-          {(table.getColumn("category")?.getFilterValue() as string) ||
-            "Categoría"}
-        </Select.Trigger>
-        <Select.Content>
-          <Select.Item value="">Todas las categorías</Select.Item>
-          {#each categorias as cat}
-            <Select.Item value={cat}>{cat}</Select.Item>
-          {/each}
-        </Select.Content>
-      </Select.Root>
+          <div class="flex items-center gap-2">
+            <Popover.Root>
+              <Popover.Trigger>
+                {#snippet child({ props })}
+                  <Button {...props} variant="outline" class="flex-1">
+                    <SlidersHorizontal class="mr-2 h-4 w-4" />
+                    Filtros
+                  </Button>
+                {/snippet}
+              </Popover.Trigger>
+              <Popover.Content class="w-72 space-y-4">
+                <div class="space-y-2">
+                  <p class="text-sm font-medium">Categoría</p>
+                  <Select.Root
+                    type="single"
+                    value={(table
+                      .getColumn("category")
+                      ?.getFilterValue() as string) ?? ""}
+                    onValueChange={(value) =>
+                      table
+                        .getColumn("category")
+                        ?.setFilterValue(value || undefined)}
+                  >
+                    <Select.Trigger class="w-full">
+                      {(table
+                        .getColumn("category")
+                        ?.getFilterValue() as string) || "Categoría"}
+                    </Select.Trigger>
+                    <Select.Content>
+                      <Select.Item value="">Todas las categorías</Select.Item>
+                      {#each categorias as cat}
+                        <Select.Item value={cat}>{cat}</Select.Item>
+                      {/each}
+                    </Select.Content>
+                  </Select.Root>
+                </div>
 
-      <!-- Más filtros -->
-      <Popover.Root>
-        <Popover.Trigger>
-          {#snippet child({ props })}
-            <Button {...props} variant="outline" class="h-9">
-              <SlidersHorizontal class="mr-2 h-4 w-4" />
-              Más filtros
+                <div class="space-y-2">
+                  <p class="text-sm font-medium">Rango de precio</p>
+                  <div class="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Mín"
+                      bind:value={precioMin}
+                      class="h-8"
+                    />
+                    <span class="text-muted-foreground">-</span>
+                    <Input
+                      type="number"
+                      placeholder="Máx"
+                      bind:value={precioMax}
+                      class="h-8"
+                    />
+                  </div>
+                </div>
+
+                <div class="space-y-2">
+                  <p class="text-sm font-medium">Stock mínimo</p>
+                  <Input
+                    type="number"
+                    placeholder="Ej: 10"
+                    bind:value={stockMin}
+                    class="h-8"
+                  />
+                </div>
+
+                <div class="flex items-center justify-between border-t pt-3">
+                  <p class="text-sm text-muted-foreground">Filas por página</p>
+                  <Select.Root
+                    type="single"
+                    value={String(table.atoms.pagination.get().pageSize)}
+                    onValueChange={(value) => table.setPageSize(Number(value))}
+                  >
+                    <Select.Trigger class="w-20">
+                      {table.atoms.pagination.get().pageSize}
+                    </Select.Trigger>
+                    <Select.Content>
+                      {#each [5, 10, 50, 100] as size}
+                        <Select.Item value={String(size)}>{size}</Select.Item>
+                      {/each}
+                    </Select.Content>
+                  </Select.Root>
+                </div>
+
+                <Button
+                  size="sm"
+                  class="w-full"
+                  onclick={() => aplicarFiltrosAvanzados(table)}
+                >
+                  Aplicar filtros
+                </Button>
+              </Popover.Content>
+            </Popover.Root>
+
+            <Button
+              class="flex-1 bg-primary text-white border border-primary hover:bg-primary/80 hover:text-white"
+            >
+              <Plus class="mr-2 h-4 w-4" />
+              Nuevo
             </Button>
-          {/snippet}
-        </Popover.Trigger>
-        <Popover.Content class="w-72 space-y-4">
-          <div class="space-y-2">
-            <p class="text-sm font-medium">Rango de precio</p>
-            <div class="flex items-center gap-2">
-              <Input
-                type="number"
-                placeholder="Mín"
-                bind:value={precioMin}
-                class="h-8"
-              />
-              <span class="text-muted-foreground">-</span>
-              <Input
-                type="number"
-                placeholder="Máx"
-                bind:value={precioMax}
-                class="h-8"
-              />
-            </div>
-          </div>
 
-          <div class="space-y-2">
-            <p class="text-sm font-medium">Stock mínimo</p>
-            <Input
-              type="number"
-              placeholder="Ej: 10"
-              bind:value={stockMin}
-              class="h-8"
-            />
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger>
+                {#snippet child({ props })}
+                  <Button {...props} variant="outline" size="icon">
+                    <MoreVertical class="h-4 w-4" />
+                  </Button>
+                {/snippet}
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content align="end">
+                <DropdownMenu.Item onclick={() => exportarCSV(table)}>
+                  Exportar ({table.getFilteredSelectedRowModel().rows.length})
+                </DropdownMenu.Item>
+                {#if table.getFilteredSelectedRowModel().rows.length > 0}
+                  <DropdownMenu.Item
+                    variant="destructive"
+                    onclick={() => eliminarSeleccionados(table)}
+                  >
+                    Eliminar ({table.getFilteredSelectedRowModel().rows.length})
+                  </DropdownMenu.Item>
+                {/if}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
           </div>
+        </div>
 
-          <Button
-            size="sm"
-            class="w-full"
-            onclick={() => aplicarFiltrosAvanzados(table)}
+        <!-- ============ VERSIÓN DESKTOP (md+) ============ -->
+        <div class="hidden md:flex flex-1 items-center gap-3">
+          <Input
+            placeholder="Buscar producto..."
+            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+            oninput={(e) =>
+              table.getColumn("name")?.setFilterValue(e.currentTarget.value)}
+            class="max-w-sm"
+          />
+
+          <!-- Filtro principal: Categoría -->
+          <Select.Root
+            type="single"
+            value={(table.getColumn("category")?.getFilterValue() as string) ??
+              ""}
+            onValueChange={(value) =>
+              table.getColumn("category")?.setFilterValue(value || undefined)}
           >
-            Aplicar filtros
+            <Select.Trigger class="h-9 w-[160px]">
+              {(table.getColumn("category")?.getFilterValue() as string) ||
+                "Categoría"}
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Item value="">Todas las categorías</Select.Item>
+              {#each categorias as cat}
+                <Select.Item value={cat}>{cat}</Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+
+          <!-- Más filtros -->
+          <Popover.Root>
+            <Popover.Trigger>
+              {#snippet child({ props })}
+                <Button {...props} variant="outline" class="h-9">
+                  <SlidersHorizontal class="mr-2 h-4 w-4" />
+                  Más filtros
+                </Button>
+              {/snippet}
+            </Popover.Trigger>
+            <Popover.Content class="w-72 space-y-4">
+              <div class="space-y-2">
+                <p class="text-sm font-medium">Rango de precio</p>
+                <div class="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    placeholder="Mín"
+                    bind:value={precioMin}
+                    class="h-8"
+                  />
+                  <span class="text-muted-foreground">-</span>
+                  <Input
+                    type="number"
+                    placeholder="Máx"
+                    bind:value={precioMax}
+                    class="h-8"
+                  />
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <p class="text-sm font-medium">Stock mínimo</p>
+                <Input
+                  type="number"
+                  placeholder="Ej: 10"
+                  bind:value={stockMin}
+                  class="h-8"
+                />
+              </div>
+
+              <Button
+                size="sm"
+                class="w-full"
+                onclick={() => aplicarFiltrosAvanzados(table)}
+              >
+                Aplicar filtros
+              </Button>
+            </Popover.Content>
+          </Popover.Root>
+
+          <div class="flex items-center gap-2 ml-auto">
+            <p class="text-sm text-muted-foreground whitespace-nowrap">
+              Filas por página
+            </p>
+            <Select.Root
+              type="single"
+              value={String(table.atoms.pagination.get().pageSize)}
+              onValueChange={(value) => table.setPageSize(Number(value))}
+            >
+              <Select.Trigger class="h-8 w-17.5">
+                {table.atoms.pagination.get().pageSize}
+              </Select.Trigger>
+              <Select.Content>
+                {#each [5, 10, 50, 100] as size}
+                  <Select.Item value={String(size)}>{size}</Select.Item>
+                {/each}
+              </Select.Content>
+            </Select.Root>
+          </div>
+        </div>
+
+        <div class="hidden md:flex items-center gap-2 shrink-0">
+          {#if table.getFilteredSelectedRowModel().rows.length > 0}
+            <Button
+              variant="destructive"
+              onclick={() => eliminarSeleccionados(table)}
+            >
+              <Trash2 class="mr-2 h-4 w-4" />
+              Eliminar ({table.getFilteredSelectedRowModel().rows.length})
+            </Button>
+          {/if}
+          <Button variant="outline" onclick={() => exportarCSV(table)}>
+            <Download class="mr-2 h-4 w-4" />
+            Exportar ({table.getFilteredSelectedRowModel().rows.length})
           </Button>
-        </Popover.Content>
-      </Popover.Root>
+          <Button
+            variant="outline"
+            class="bg-primary text-white border border-primary hover:bg-primary/80 hover:text-white"
+          >
+            <Plus class="mr-2 h-4 w-4 " />
+            Nuevo producto
+          </Button>
+        </div>
+      {/snippet}
+    </DataTable>
+  </div>
+  <ProductRail onNuevaCategoria={() => (sheetCategoriaAbierto = true)} />
+</div>
 
-      <div class="flex items-center gap-2 ml-auto">
-        <p class="text-sm text-muted-foreground whitespace-nowrap">
-          Filas por página
-        </p>
-        <Select.Root
-          type="single"
-          value={String(table.atoms.pagination.get().pageSize)}
-          onValueChange={(value) => table.setPageSize(Number(value))}
-        >
-          <Select.Trigger class="h-8 w-17.5">
-            {table.atoms.pagination.get().pageSize}
-          </Select.Trigger>
-          <Select.Content>
-            {#each [5, 10, 50, 100] as size}
-              <Select.Item value={String(size)}>{size}</Select.Item>
-            {/each}
-          </Select.Content>
-        </Select.Root>
-      </div>
-    </div>
-
-    <div class="flex items-center gap-2 shrink-0">
-      {#if table.getFilteredSelectedRowModel().rows.length > 0}
-        <Button
-          variant="destructive"
-          onclick={() => eliminarSeleccionados(table)}
-        >
-          <Trash2 class="mr-2 h-4 w-4" />
-          Eliminar ({table.getFilteredSelectedRowModel().rows.length})
-        </Button>
-      {/if}
-      <Button variant="outline" onclick={() => exportarCSV(table)}>
-        <Download class="mr-2 h-4 w-4" />
-        Exportar ({table.getFilteredSelectedRowModel().rows.length})
-      </Button>
-      <Button
-        variant="outline"
-        class="bg-primary text-white border border-primary hover:bg-primary/80 hover:text-white"
+<Sheet.Root bind:open={sheetCategoriaAbierto}>
+  <Sheet.Content side="right" class="w-full sm:max-w-sm">
+    <Sheet.Header>
+      <Sheet.Title>Nueva categoría</Sheet.Title>
+      <Sheet.Description
+        >Crea una categoría para organizar tus productos.</Sheet.Description
       >
-        <Plus class="mr-2 h-4 w-4 " />
-        Nuevo producto
-      </Button>
-    </div>
-  {/snippet}
-</DataTable>
+    </Sheet.Header>
+
+    <form method="POST" action="?/crearCategoria" class="space-y-4 px-4">
+      <!-- Aquí va el Form.Field con Superforms, igual que en el login -->
+    </form>
+
+    <Sheet.Footer>
+      <Sheet.Close>
+        {#snippet child({ props })}
+          <Button {...props} variant="outline" class="w-full">Cancelar</Button>
+        {/snippet}
+      </Sheet.Close>
+    </Sheet.Footer>
+  </Sheet.Content>
+</Sheet.Root>
