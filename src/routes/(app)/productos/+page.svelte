@@ -1,6 +1,6 @@
 <script lang="ts">
   import DataTable from "$lib/components/data-table/data-table.svelte";
-  import { columns, type Producto } from "./table/columns";
+  import { createColumns, type Producto } from "./table/columns";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import Download from "@lucide/svelte/icons/download";
@@ -13,7 +13,8 @@
   import MoreVertical from "@lucide/svelte/icons/more-vertical";
   import ProductRail from "./product-rail.svelte";
   import * as Sheet from "$lib/components/ui/sheet/index.js";
-
+  import ConfirmDialog from "$lib/components/confirmDialog/ConfirmDialog.svelte";
+  import { toast, Toaster } from "svelte-sonner";
 
   let { data } = $props();
 
@@ -75,6 +76,38 @@
   }
 
   let sheetCategoriaAbierto = $state(false);
+  let confirmEliminarAbierto = $state(false);
+  let tablaParaEliminar: any = null;
+
+  function pedirConfirmacionEliminar(table: any) {
+    const seleccionados = table.getFilteredSelectedRowModel().rows;
+    if (seleccionados.length === 0) return;
+    tablaParaEliminar = table;
+    confirmEliminarAbierto = true;
+  }
+
+  function confirmarEliminacion() {
+    const seleccionados = tablaParaEliminar
+      .getFilteredSelectedRowModel()
+      .rows.map((r: any) => r.original) as Producto[];
+
+    // TODO: llamar a tu products-ms para eliminar cada uno por su id
+    console.log("Eliminando:", seleccionados.map((p) => p.id));
+    toast.success("Eliminados");
+
+    confirmEliminarAbierto = false;
+  }
+
+    // 👇 NUEVO: función para eliminar un producto individual desde el menú "..."
+  function eliminarProductoIndividual(id: number) {
+    // TODO: llamar a tu products-ms para eliminar por id
+    console.log("Eliminando producto individual:", id);
+    toast.success("Producto eliminado");
+  }
+
+  // 👇 NUEVO: se generan las columnas pasándole la función de arriba
+  const columns = createColumns(eliminarProductoIndividual);
+
 </script>
 
 <div class="pr-16">
@@ -321,7 +354,7 @@
           {#if table.getFilteredSelectedRowModel().rows.length > 0}
             <Button
               variant="destructive"
-              onclick={() => eliminarSeleccionados(table)}
+              onclick={() => pedirConfirmacionEliminar(table)}
             >
               <Trash2 class="mr-2 h-4 w-4" />
               Eliminar ({table.getFilteredSelectedRowModel().rows.length})
@@ -368,3 +401,20 @@
     </Sheet.Footer>
   </Sheet.Content>
 </Sheet.Root>
+
+<ConfirmDialog
+  bind:open={confirmEliminarAbierto}
+  title="¿Eliminar productos seleccionados?"
+  description="Esta acción no se puede deshacer. Los productos se eliminarán permanentemente."
+  confirmText="Eliminar"
+  onConfirm={confirmarEliminacion}
+/>
+
+<Toaster
+  richColors
+  style="
+    --success-bg: #1a7f1a; 
+    --success-text: #fff; 
+    --success-border: #1a7f1a;
+  "
+/>
