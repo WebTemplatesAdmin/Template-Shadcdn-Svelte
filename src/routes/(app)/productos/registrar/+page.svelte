@@ -13,6 +13,7 @@
   import { productoSchema } from "./schemas/schema.ts";
   import type { PageData } from "./$types";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
+  import { Toaster, toast } from 'svelte-sonner'
 
   let { data }: { data: PageData } = $props();
 
@@ -70,6 +71,7 @@
     $formData.category = valor; // la selecciona automáticamente
     nuevaCategoriaNombre = "";
     dialogNuevaCategoriaAbierto = false;
+    toast.success("Categoría creada con éxito");
     // TODO: llamar a tu products-ms para guardar la categoría permanentemente
   }
 </script>
@@ -593,3 +595,10 @@
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
+
+<Toaster richColors
+style="
+    --success-bg: #1a7f1a; 
+    --success-text: #fff; 
+    --success-border: #1a7f1a;
+  "  />
