@@ -13,7 +13,7 @@
   import MoreVertical from "@lucide/svelte/icons/more-vertical";
   import ProductRail from "./product-rail.svelte";
   import * as Sheet from "$lib/components/ui/sheet/index.js";
-  import * as Form from "$lib/components/ui/form/index.js";
+
 
   let { data } = $props();
 
@@ -334,6 +334,7 @@
           <Button
             variant="outline"
             class="bg-primary text-white border border-primary hover:bg-primary/80 hover:text-white"
+            href="/productos/registrar"
           >
             <Plus class="mr-2 h-4 w-4 " />
             Nuevo producto
