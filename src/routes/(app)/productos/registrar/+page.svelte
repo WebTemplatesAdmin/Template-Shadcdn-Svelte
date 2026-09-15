@@ -13,7 +13,8 @@
   import { productoSchema } from "./schemas/schema.ts";
   import type { PageData } from "./$types";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { Toaster, toast } from 'svelte-sonner'
+  import { Toaster, toast } from "svelte-sonner";
+  
 
   let { data }: { data: PageData } = $props();
 
@@ -34,6 +35,8 @@
   ]);
   let dialogNuevaCategoriaAbierto = $state(false);
   let nuevaCategoriaNombre = $state("");
+  let confirmEliminarAbierto = $state(false);
+  let tablaParaEliminar: any = null;
   const envases = ["vidrio", "pet", "lata", "tetrapak"];
 
   const margen = $derived.by(() => {
@@ -61,6 +64,7 @@
       (_, i) => i !== index,
     );
   }
+
 
   function crearCategoria() {
     if (!nuevaCategoriaNombre.trim()) return;
@@ -573,11 +577,15 @@
   <Dialog.Content class="sm:max-w-sm">
     <Dialog.Header>
       <Dialog.Title>Nueva categoría</Dialog.Title>
-      <Dialog.Description>Se agregará a la lista y quedará seleccionada.</Dialog.Description>
+      <Dialog.Description
+        >Se agregará a la lista y quedará seleccionada.</Dialog.Description
+      >
     </Dialog.Header>
 
     <div class="space-y-2">
-      <label class="text-sm font-medium" for="nueva-categoria-input">Nombre</label>
+      <label class="text-sm font-medium" for="nueva-categoria-input"
+        >Nombre</label
+      >
       <input
         id="nueva-categoria-input"
         bind:value={nuevaCategoriaNombre}
@@ -588,17 +596,24 @@
     </div>
 
     <Dialog.Footer>
-      <Button type="button" variant="outline" onclick={() => (dialogNuevaCategoriaAbierto = false)}>
+      <Button
+        type="button"
+        variant="outline"
+        onclick={() => (dialogNuevaCategoriaAbierto = false)}
+      >
         Cancelar
       </Button>
-      <Button type="button" onclick={crearCategoria}>Crear y seleccionar</Button>
+      <Button type="button" onclick={crearCategoria}>Crear y seleccionar</Button
+      >
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
 
-<Toaster richColors
-style="
+<Toaster
+  richColors
+  style="
     --success-bg: #1a7f1a; 
     --success-text: #fff; 
     --success-border: #1a7f1a;
-  "  />
+  "
+/>

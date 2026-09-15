@@ -3,8 +3,20 @@
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import MoreHorizontal from "@lucide/svelte/icons/more-horizontal";
+  import ConfirmDialog from "$lib/components/confirmDialog/ConfirmDialog.svelte";
+  import { toast, Toaster } from "svelte-sonner";
 
-  let { id }: { id: number } = $props();
+  let {
+    id,
+    nombre,
+    onEliminar,
+  }: {
+    id: number;
+    nombre: string;
+    onEliminar: (id: number) => void;
+  } = $props();
+
+  let confirmAbierto = $state(false);
 </script>
 
 <DropdownMenu.Root>
@@ -19,8 +31,22 @@
     <DropdownMenu.Item onclick={() => console.log("Editar", id)}>
       Editar
     </DropdownMenu.Item>
-    <DropdownMenu.Item variant="destructive" onclick={() => console.log("Eliminar", id)}>
+    <DropdownMenu.Item
+      variant="destructive"
+      onclick={() => confirmAbierto = true}
+    >
       Eliminar
     </DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
+
+<ConfirmDialog
+  bind:open={confirmAbierto}
+  title="¿Eliminar este producto?"
+  description={`"${nombre}" se eliminará permanentemente. Esta acción no se puede deshacer.`}
+  confirmText="Eliminar"
+   onConfirm={() => {
+    onEliminar(id);
+    confirmAbierto = false;
+  }}
+/>
