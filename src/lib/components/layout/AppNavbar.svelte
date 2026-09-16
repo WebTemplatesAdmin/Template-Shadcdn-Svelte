@@ -11,9 +11,23 @@
   import Menu from "@lucide/svelte/icons/menu";
   import UserNav from "./UserNav.svelte";
   import CommandMenu from "$lib/components/commandMenu/CommandMenu.svelte";
+  import Maximize from "@lucide/svelte/icons/maximize";
+  import Minimize from "@lucide/svelte/icons/minimize";
 
   let commandMenuAbierto = $state(false);
+  let pantallaCompleta = $state(false);
 
+  function alternarPantallaCompleta() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  function actualizarEstado() {
+    pantallaCompleta = !!document.fullscreenElement;
+  }
 
   const notificaciones = [
     {
@@ -37,6 +51,7 @@
   ];
 </script>
 
+<svelte:document onfullscreenchange={actualizarEstado} />
 <header
   class="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6"
 >
@@ -70,6 +85,21 @@
     </div>
   </div>
   <div class="ml-auto flex items-center gap-2 md:gap-3">
+    <Button
+      variant="ghost"
+      size="icon"
+      onclick={alternarPantallaCompleta}
+      title={pantallaCompleta
+        ? "Salir de pantalla completa"
+        : "Pantalla completa"}
+    >
+      {#if pantallaCompleta}
+        <Minimize class="h-5 w-5" />
+      {:else}
+        <Maximize class="h-5 w-5" />
+      {/if}
+    </Button>
+
     <button
       type="button"
       onclick={() => (commandMenuAbierto = true)}
