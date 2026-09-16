@@ -10,6 +10,10 @@
   import Bell from "@lucide/svelte/icons/bell";
   import Menu from "@lucide/svelte/icons/menu";
   import UserNav from "./UserNav.svelte";
+  import CommandMenu from "$lib/components/commandMenu/CommandMenu.svelte";
+
+  let commandMenuAbierto = $state(false);
+
 
   const notificaciones = [
     {
@@ -66,16 +70,19 @@
     </div>
   </div>
   <div class="ml-auto flex items-center gap-2 md:gap-3">
-    <div class="relative hidden md:block w-72 lg:w-96">
-      <Search
-        class="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-      />
-      <Input
-        type="search"
-        placeholder="Buscar productos, pedidos, clientes..."
-        class="w-full rounded-md bg-muted/50 pl-9 h-9"
-      />
-    </div>
+    <button
+      type="button"
+      onclick={() => (commandMenuAbierto = true)}
+      class="relative hidden md:flex w-72 lg:w-96 items-center rounded-md bg-muted/50 h-9 px-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+    >
+      <Search class="h-4 w-4 shrink-0" />
+      <span class="ml-2">Buscar productos, pedidos, clientes...</span>
+      <kbd
+        class="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex"
+      >
+        <span class="text-xs">⌘</span>K
+      </kbd>
+    </button>
     <!-- <Button variant="ghost" size="icon" class="relative">
       <Bell class="h-5 w-5" />
       <span class="absolute top-1.5 right-1.5 flex h-2 w-2">
@@ -141,3 +148,5 @@
     <UserNav />
   </div>
 </header>
+
+<CommandMenu bind:open={commandMenuAbierto} />
