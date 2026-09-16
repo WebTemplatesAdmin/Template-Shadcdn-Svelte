@@ -13,6 +13,8 @@
   import { productoSchema } from "./schemas/schema.ts";
   import type { PageData } from "./$types";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
+  import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
+
   import { Toaster, toast } from "svelte-sonner";
   
 
@@ -81,9 +83,26 @@
 </script>
 
 <div class="mx-auto max-w-5xl pb-24">
+
+  <Breadcrumb.Root>
+  <Breadcrumb.List>
+    <Breadcrumb.Item>
+      <Breadcrumb.Link href="/">Gestión</Breadcrumb.Link>
+    </Breadcrumb.Item>
+    <Breadcrumb.Separator />
+    <Breadcrumb.Item>
+      <Breadcrumb.Link href="/productos">Productos</Breadcrumb.Link>
+    </Breadcrumb.Item>
+    <Breadcrumb.Separator />
+    <Breadcrumb.Item class="font-medium text-md text-primary">
+      <Breadcrumb.Page class="font-medium text-md text-primary">Nuevo producto</Breadcrumb.Page>
+    </Breadcrumb.Item>
+  </Breadcrumb.List>
+</Breadcrumb.Root>
+
   <a
     href="/productos"
-    class="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+    class="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mt-5"
   >
     <ArrowLeft class="h-4 w-4" />
     Volver a productos
