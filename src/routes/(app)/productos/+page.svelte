@@ -15,6 +15,7 @@
   import * as Sheet from "$lib/components/ui/sheet/index.js";
   import ConfirmDialog from "$lib/components/confirmDialog/ConfirmDialog.svelte";
   import { toast, Toaster } from "svelte-sonner";
+  import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
 
   let { data } = $props();
 
@@ -92,13 +93,16 @@
       .rows.map((r: any) => r.original) as Producto[];
 
     // TODO: llamar a tu products-ms para eliminar cada uno por su id
-    console.log("Eliminando:", seleccionados.map((p) => p.id));
+    console.log(
+      "Eliminando:",
+      seleccionados.map((p) => p.id),
+    );
     toast.success("Eliminados");
 
     confirmEliminarAbierto = false;
   }
 
-    // 👇 NUEVO: función para eliminar un producto individual desde el menú "..."
+  // 👇 NUEVO: función para eliminar un producto individual desde el menú "..."
   function eliminarProductoIndividual(id: number) {
     // TODO: llamar a tu products-ms para eliminar por id
     console.log("Eliminando producto individual:", id);
@@ -107,11 +111,22 @@
 
   // 👇 NUEVO: se generan las columnas pasándole la función de arriba
   const columns = createColumns(eliminarProductoIndividual);
-
 </script>
 
 <div class="pr-16">
   <div class="min-w-0 flex-1">
+    <Breadcrumb.Root class="mb-4">
+      <Breadcrumb.List>
+        <Breadcrumb.Item>
+          <Breadcrumb.Link href="/">Gestión</Breadcrumb.Link>
+        </Breadcrumb.Item>
+        <Breadcrumb.Separator />
+        <Breadcrumb.Item class="font-medium text-md text-primary">
+          <Breadcrumb.Link href="/productos">Productos</Breadcrumb.Link>
+        </Breadcrumb.Item>
+      </Breadcrumb.List>
+    </Breadcrumb.Root>
+
     <DataTable data={data.productos} {columns}>
       {#snippet toolbar({ table })}
         <!-- ============ VERSIÓN MOBILE (< md) ============ -->
