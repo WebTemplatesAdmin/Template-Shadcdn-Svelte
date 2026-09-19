@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { cn } from "$lib/utils.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -16,6 +15,7 @@
   import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
   import { getBreadcrumbs } from "$lib/utils/breadcrumbs";
   import SyncIndicator from "./SyncIndicator.svelte";
+  import BranchSelector from "./BranchSelector.svelte";
 
   let commandMenuAbierto = $state(false);
   let pantallaCompleta = $state(false);
@@ -89,6 +89,7 @@
         Gestiona tu negocio en tiempo real
       </p>
     </div>
+    <BranchSelector />
   </div>
   <div class="ml-auto flex items-center gap-2 md:gap-3">
     <Button
