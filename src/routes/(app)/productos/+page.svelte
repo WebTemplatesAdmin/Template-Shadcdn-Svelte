@@ -1,5 +1,6 @@
 <script lang="ts">
   import DataTable from "$lib/components/data-table/data-table.svelte";
+  import { navigating } from "$app/state";
   import { createColumns, type Producto } from "./table/columns";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -15,7 +16,7 @@
   import * as Sheet from "$lib/components/ui/sheet/index.js";
   import ConfirmDialog from "$lib/components/confirmDialog/ConfirmDialog.svelte";
   import { toast, Toaster } from "svelte-sonner";
-  import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
+  import DataTableSkeleton from "$lib/components/data-table/data-table-skeleton.svelte";
 
   let { data } = $props();
 
@@ -78,6 +79,7 @@
 
   let sheetCategoriaAbierto = $state(false);
   let confirmEliminarAbierto = $state(false);
+  let cargandoManualmente = $state(false);
   let tablaParaEliminar: any = null;
 
   function pedirConfirmacionEliminar(table: any) {
@@ -115,56 +117,194 @@
 
 <div class="pr-16">
   <div class="min-w-0 flex-1">
-    
+    {#await data.productos /* || cargandoManualmente */}
+      <DataTableSkeleton columnas={6} filas={10} />
+    {:then productos}
+      <DataTable data={productos} {columns}>
+        {#snippet toolbar({ table })}
+          <!-- ============ VERSIÓN MOBILE (< md) ============ -->
+          <div class="flex w-full flex-col gap-2 md:hidden">
+            <Input
+              placeholder="Buscar producto..."
+              value={(table.getColumn("name")?.getFilterValue() as string) ??
+                ""}
+              oninput={(e) =>
+                table.getColumn("name")?.setFilterValue(e.currentTarget.value)}
+            />
 
-    <DataTable data={data.productos} {columns}>
-      {#snippet toolbar({ table })}
-        <!-- ============ VERSIÓN MOBILE (< md) ============ -->
-        <div class="flex w-full flex-col gap-2 md:hidden">
-          <Input
-            placeholder="Buscar producto..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            oninput={(e) =>
-              table.getColumn("name")?.setFilterValue(e.currentTarget.value)}
-          />
+            <div class="flex items-center gap-2">
+              <Popover.Root>
+                <Popover.Trigger>
+                  {#snippet child({ props })}
+                    <Button {...props} variant="outline" class="flex-1">
+                      <SlidersHorizontal class="mr-2 h-4 w-4" />
+                      Filtros
+                    </Button>
+                  {/snippet}
+                </Popover.Trigger>
+                <Popover.Content class="w-72 space-y-4">
+                  <div class="space-y-2">
+                    <p class="text-sm font-medium">Categoría</p>
+                    <Select.Root
+                      type="single"
+                      value={(table
+                        .getColumn("category")
+                        ?.getFilterValue() as string) ?? ""}
+                      onValueChange={(value) =>
+                        table
+                          .getColumn("category")
+                          ?.setFilterValue(value || undefined)}
+                    >
+                      <Select.Trigger class="w-full">
+                        {(table
+                          .getColumn("category")
+                          ?.getFilterValue() as string) || "Categoría"}
+                      </Select.Trigger>
+                      <Select.Content>
+                        <Select.Item value="">Todas las categorías</Select.Item>
+                        {#each categorias as cat}
+                          <Select.Item value={cat}>{cat}</Select.Item>
+                        {/each}
+                      </Select.Content>
+                    </Select.Root>
+                  </div>
 
-          <div class="flex items-center gap-2">
+                  <div class="space-y-2">
+                    <p class="text-sm font-medium">Rango de precio</p>
+                    <div class="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Mín"
+                        bind:value={precioMin}
+                        class="h-8"
+                      />
+                      <span class="text-muted-foreground">-</span>
+                      <Input
+                        type="number"
+                        placeholder="Máx"
+                        bind:value={precioMax}
+                        class="h-8"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="space-y-2">
+                    <p class="text-sm font-medium">Stock mínimo</p>
+                    <Input
+                      type="number"
+                      placeholder="Ej: 10"
+                      bind:value={stockMin}
+                      class="h-8"
+                    />
+                  </div>
+
+                  <div class="flex items-center justify-between border-t pt-3">
+                    <p class="text-sm text-muted-foreground">
+                      Filas por página
+                    </p>
+                    <Select.Root
+                      type="single"
+                      value={String(table.atoms.pagination.get().pageSize)}
+                      onValueChange={(value) =>
+                        table.setPageSize(Number(value))}
+                    >
+                      <Select.Trigger class="w-20">
+                        {table.atoms.pagination.get().pageSize}
+                      </Select.Trigger>
+                      <Select.Content>
+                        {#each [5, 10, 50, 100] as size}
+                          <Select.Item value={String(size)}>{size}</Select.Item>
+                        {/each}
+                      </Select.Content>
+                    </Select.Root>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    class="w-full"
+                    onclick={() => aplicarFiltrosAvanzados(table)}
+                  >
+                    Aplicar filtros
+                  </Button>
+                </Popover.Content>
+              </Popover.Root>
+
+              <Button
+                class="flex-1 bg-primary text-white border border-primary hover:bg-primary/80 hover:text-white"
+              >
+                <Plus class="mr-2 h-4 w-4" />
+                Nuevo
+              </Button>
+
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger>
+                  {#snippet child({ props })}
+                    <Button {...props} variant="outline" size="icon">
+                      <MoreVertical class="h-4 w-4" />
+                    </Button>
+                  {/snippet}
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content align="end">
+                  <DropdownMenu.Item onclick={() => exportarCSV(table)}>
+                    Exportar ({table.getFilteredSelectedRowModel().rows.length})
+                  </DropdownMenu.Item>
+                  {#if table.getFilteredSelectedRowModel().rows.length > 0}
+                    <DropdownMenu.Item
+                      variant="destructive"
+                      onclick={() => eliminarSeleccionados(table)}
+                    >
+                      Eliminar ({table.getFilteredSelectedRowModel().rows
+                        .length})
+                    </DropdownMenu.Item>
+                  {/if}
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
+            </div>
+          </div>
+
+          <!-- ============ VERSIÓN DESKTOP (md+) ============ -->
+          <div class="hidden md:flex flex-1 items-center gap-3">
+            <Input
+              placeholder="Buscar producto..."
+              value={(table.getColumn("name")?.getFilterValue() as string) ??
+                ""}
+              oninput={(e) =>
+                table.getColumn("name")?.setFilterValue(e.currentTarget.value)}
+              class="max-w-sm"
+            />
+
+            <!-- Filtro principal: Categoría -->
+            <Select.Root
+              type="single"
+              value={(table
+                .getColumn("category")
+                ?.getFilterValue() as string) ?? ""}
+              onValueChange={(value) =>
+                table.getColumn("category")?.setFilterValue(value || undefined)}
+            >
+              <Select.Trigger class="h-9 w-[160px]">
+                {(table.getColumn("category")?.getFilterValue() as string) ||
+                  "Categoría"}
+              </Select.Trigger>
+              <Select.Content>
+                <Select.Item value="">Todas las categorías</Select.Item>
+                {#each categorias as cat}
+                  <Select.Item value={cat}>{cat}</Select.Item>
+                {/each}
+              </Select.Content>
+            </Select.Root>
+
+            <!-- Más filtros -->
             <Popover.Root>
               <Popover.Trigger>
                 {#snippet child({ props })}
-                  <Button {...props} variant="outline" class="flex-1">
+                  <Button {...props} variant="outline" class="h-9">
                     <SlidersHorizontal class="mr-2 h-4 w-4" />
-                    Filtros
+                    Más filtros
                   </Button>
                 {/snippet}
               </Popover.Trigger>
               <Popover.Content class="w-72 space-y-4">
-                <div class="space-y-2">
-                  <p class="text-sm font-medium">Categoría</p>
-                  <Select.Root
-                    type="single"
-                    value={(table
-                      .getColumn("category")
-                      ?.getFilterValue() as string) ?? ""}
-                    onValueChange={(value) =>
-                      table
-                        .getColumn("category")
-                        ?.setFilterValue(value || undefined)}
-                  >
-                    <Select.Trigger class="w-full">
-                      {(table
-                        .getColumn("category")
-                        ?.getFilterValue() as string) || "Categoría"}
-                    </Select.Trigger>
-                    <Select.Content>
-                      <Select.Item value="">Todas las categorías</Select.Item>
-                      {#each categorias as cat}
-                        <Select.Item value={cat}>{cat}</Select.Item>
-                      {/each}
-                    </Select.Content>
-                  </Select.Root>
-                </div>
-
                 <div class="space-y-2">
                   <p class="text-sm font-medium">Rango de precio</p>
                   <div class="flex items-center gap-2">
@@ -194,24 +334,6 @@
                   />
                 </div>
 
-                <div class="flex items-center justify-between border-t pt-3">
-                  <p class="text-sm text-muted-foreground">Filas por página</p>
-                  <Select.Root
-                    type="single"
-                    value={String(table.atoms.pagination.get().pageSize)}
-                    onValueChange={(value) => table.setPageSize(Number(value))}
-                  >
-                    <Select.Trigger class="w-20">
-                      {table.atoms.pagination.get().pageSize}
-                    </Select.Trigger>
-                    <Select.Content>
-                      {#each [5, 10, 50, 100] as size}
-                        <Select.Item value={String(size)}>{size}</Select.Item>
-                      {/each}
-                    </Select.Content>
-                  </Select.Root>
-                </div>
-
                 <Button
                   size="sm"
                   class="w-full"
@@ -222,164 +344,53 @@
               </Popover.Content>
             </Popover.Root>
 
-            <Button
-              class="flex-1 bg-primary text-white border border-primary hover:bg-primary/80 hover:text-white"
-            >
-              <Plus class="mr-2 h-4 w-4" />
-              Nuevo
-            </Button>
-
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger>
-                {#snippet child({ props })}
-                  <Button {...props} variant="outline" size="icon">
-                    <MoreVertical class="h-4 w-4" />
-                  </Button>
-                {/snippet}
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content align="end">
-                <DropdownMenu.Item onclick={() => exportarCSV(table)}>
-                  Exportar ({table.getFilteredSelectedRowModel().rows.length})
-                </DropdownMenu.Item>
-                {#if table.getFilteredSelectedRowModel().rows.length > 0}
-                  <DropdownMenu.Item
-                    variant="destructive"
-                    onclick={() => eliminarSeleccionados(table)}
-                  >
-                    Eliminar ({table.getFilteredSelectedRowModel().rows.length})
-                  </DropdownMenu.Item>
-                {/if}
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
-          </div>
-        </div>
-
-        <!-- ============ VERSIÓN DESKTOP (md+) ============ -->
-        <div class="hidden md:flex flex-1 items-center gap-3">
-          <Input
-            placeholder="Buscar producto..."
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-            oninput={(e) =>
-              table.getColumn("name")?.setFilterValue(e.currentTarget.value)}
-            class="max-w-sm"
-          />
-
-          <!-- Filtro principal: Categoría -->
-          <Select.Root
-            type="single"
-            value={(table.getColumn("category")?.getFilterValue() as string) ??
-              ""}
-            onValueChange={(value) =>
-              table.getColumn("category")?.setFilterValue(value || undefined)}
-          >
-            <Select.Trigger class="h-9 w-[160px]">
-              {(table.getColumn("category")?.getFilterValue() as string) ||
-                "Categoría"}
-            </Select.Trigger>
-            <Select.Content>
-              <Select.Item value="">Todas las categorías</Select.Item>
-              {#each categorias as cat}
-                <Select.Item value={cat}>{cat}</Select.Item>
-              {/each}
-            </Select.Content>
-          </Select.Root>
-
-          <!-- Más filtros -->
-          <Popover.Root>
-            <Popover.Trigger>
-              {#snippet child({ props })}
-                <Button {...props} variant="outline" class="h-9">
-                  <SlidersHorizontal class="mr-2 h-4 w-4" />
-                  Más filtros
-                </Button>
-              {/snippet}
-            </Popover.Trigger>
-            <Popover.Content class="w-72 space-y-4">
-              <div class="space-y-2">
-                <p class="text-sm font-medium">Rango de precio</p>
-                <div class="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    placeholder="Mín"
-                    bind:value={precioMin}
-                    class="h-8"
-                  />
-                  <span class="text-muted-foreground">-</span>
-                  <Input
-                    type="number"
-                    placeholder="Máx"
-                    bind:value={precioMax}
-                    class="h-8"
-                  />
-                </div>
-              </div>
-
-              <div class="space-y-2">
-                <p class="text-sm font-medium">Stock mínimo</p>
-                <Input
-                  type="number"
-                  placeholder="Ej: 10"
-                  bind:value={stockMin}
-                  class="h-8"
-                />
-              </div>
-
-              <Button
-                size="sm"
-                class="w-full"
-                onclick={() => aplicarFiltrosAvanzados(table)}
+            <div class="flex items-center gap-2 ml-auto">
+              <p class="text-sm text-muted-foreground whitespace-nowrap">
+                Filas por página
+              </p>
+              <Select.Root
+                type="single"
+                value={String(table.atoms.pagination.get().pageSize)}
+                onValueChange={(value) => table.setPageSize(Number(value))}
               >
-                Aplicar filtros
-              </Button>
-            </Popover.Content>
-          </Popover.Root>
-
-          <div class="flex items-center gap-2 ml-auto">
-            <p class="text-sm text-muted-foreground whitespace-nowrap">
-              Filas por página
-            </p>
-            <Select.Root
-              type="single"
-              value={String(table.atoms.pagination.get().pageSize)}
-              onValueChange={(value) => table.setPageSize(Number(value))}
-            >
-              <Select.Trigger class="h-8 w-17.5">
-                {table.atoms.pagination.get().pageSize}
-              </Select.Trigger>
-              <Select.Content>
-                {#each [5, 10, 50, 100] as size}
-                  <Select.Item value={String(size)}>{size}</Select.Item>
-                {/each}
-              </Select.Content>
-            </Select.Root>
+                <Select.Trigger class="h-8 w-17.5">
+                  {table.atoms.pagination.get().pageSize}
+                </Select.Trigger>
+                <Select.Content>
+                  {#each [5, 10, 50, 100] as size}
+                    <Select.Item value={String(size)}>{size}</Select.Item>
+                  {/each}
+                </Select.Content>
+              </Select.Root>
+            </div>
           </div>
-        </div>
 
-        <div class="hidden md:flex items-center gap-2 shrink-0">
-          {#if table.getFilteredSelectedRowModel().rows.length > 0}
-            <Button
-              variant="destructive"
-              onclick={() => pedirConfirmacionEliminar(table)}
-            >
-              <Trash2 class="mr-2 h-4 w-4" />
-              Eliminar ({table.getFilteredSelectedRowModel().rows.length})
+          <div class="hidden md:flex items-center gap-2 shrink-0">
+            {#if table.getFilteredSelectedRowModel().rows.length > 0}
+              <Button
+                variant="destructive"
+                onclick={() => pedirConfirmacionEliminar(table)}
+              >
+                <Trash2 class="mr-2 h-4 w-4" />
+                Eliminar ({table.getFilteredSelectedRowModel().rows.length})
+              </Button>
+            {/if}
+            <Button variant="outline" onclick={() => exportarCSV(table)}>
+              <Download class="mr-2 h-4 w-4" />
+              Exportar ({table.getFilteredSelectedRowModel().rows.length})
             </Button>
-          {/if}
-          <Button variant="outline" onclick={() => exportarCSV(table)}>
-            <Download class="mr-2 h-4 w-4" />
-            Exportar ({table.getFilteredSelectedRowModel().rows.length})
-          </Button>
-          <Button
-            variant="outline"
-            class="bg-primary text-white border border-primary hover:bg-primary/80 hover:text-white"
-            href="/productos/registrar"
-          >
-            <Plus class="mr-2 h-4 w-4 " />
-            Nuevo producto
-          </Button>
-        </div>
-      {/snippet}
-    </DataTable>
+            <Button
+              variant="outline"
+              class="bg-primary text-white border border-primary hover:bg-primary/80 hover:text-white"
+              href="/productos/registrar"
+            >
+              <Plus class="mr-2 h-4 w-4 " />
+              Nuevo producto
+            </Button>
+          </div>
+        {/snippet}
+      </DataTable>
+    {/await}
   </div>
   <ProductRail onNuevaCategoria={() => (sheetCategoriaAbierto = true)} />
 </div>
