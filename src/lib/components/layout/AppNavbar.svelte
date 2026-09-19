@@ -13,6 +13,8 @@
   import CommandMenu from "$lib/components/commandMenu/CommandMenu.svelte";
   import Maximize from "@lucide/svelte/icons/maximize";
   import Minimize from "@lucide/svelte/icons/minimize";
+  import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
+  import { getBreadcrumbs } from "$lib/utils/breadcrumbs";
 
   let commandMenuAbierto = $state(false);
   let pantallaCompleta = $state(false);
@@ -49,6 +51,8 @@
       tiempo: "Hace 3 horas",
     },
   ];
+
+  const breadcrumbs = $derived(getBreadcrumbs($page.url.pathname));
 </script>
 
 <svelte:document onfullscreenchange={actualizarEstado} />
@@ -60,25 +64,26 @@
       <Menu class="h-5 w-5" />
     </Sidebar.Trigger>
     <div class="hidden flex-col sm:flex">
-      <h1 class="text-base font-semibold leading-none tracking-tight">
-        {#if $page.url.pathname === "/dashboard" || $page.url.pathname === "/"}
-          Dashboard
-        {:else if $page.url.pathname.startsWith("/productos")}
-          Productos
-        {:else if $page.url.pathname.startsWith("/pedidos")}
-          Pedidos
-        {:else if $page.url.pathname.startsWith("/ventas")}
-          Ventas
-        {:else if $page.url.pathname.startsWith("/usuarios")}
-          Usuarios
-        {:else if $page.url.pathname.startsWith("/configuracion")}
-          Configuración
-        {:else if $page.url.pathname.startsWith("/ayuda")}
-          Ayuda
-        {:else}
-          Panel
-        {/if}
-      </h1>
+      <Breadcrumb.Root>
+        <Breadcrumb.List>
+          {#each breadcrumbs as item, i}
+            <Breadcrumb.Item>
+              {#if i === breadcrumbs.length - 1}
+                <Breadcrumb.Page
+                  class="text-base font-semibold text-foreground"
+                >
+                  {item.label}
+                </Breadcrumb.Page>
+              {:else}
+                <Breadcrumb.Link href={item.href}>{item.label}</Breadcrumb.Link>
+              {/if}
+            </Breadcrumb.Item>
+            {#if i < breadcrumbs.length - 1}
+              <Breadcrumb.Separator />
+            {/if}
+          {/each}
+        </Breadcrumb.List>
+      </Breadcrumb.Root>
       <p class="text-xs text-muted-foreground mt-1">
         Gestiona tu negocio en tiempo real
       </p>

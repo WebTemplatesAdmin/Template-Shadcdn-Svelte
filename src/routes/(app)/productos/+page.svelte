@@ -115,17 +115,7 @@
 
 <div class="pr-16">
   <div class="min-w-0 flex-1">
-    <Breadcrumb.Root class="mb-4">
-      <Breadcrumb.List>
-        <Breadcrumb.Item>
-          <Breadcrumb.Link href="/">Gestión</Breadcrumb.Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Separator />
-        <Breadcrumb.Item class="font-medium text-md text-primary">
-          <Breadcrumb.Link href="/productos">Productos</Breadcrumb.Link>
-        </Breadcrumb.Item>
-      </Breadcrumb.List>
-    </Breadcrumb.Root>
+    
 
     <DataTable data={data.productos} {columns}>
       {#snippet toolbar({ table })}

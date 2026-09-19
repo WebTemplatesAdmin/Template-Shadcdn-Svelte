@@ -84,21 +84,7 @@
 
 <div class="mx-auto max-w-5xl pb-24">
 
-  <Breadcrumb.Root>
-  <Breadcrumb.List>
-    <Breadcrumb.Item>
-      <Breadcrumb.Link href="/">Gestión</Breadcrumb.Link>
-    </Breadcrumb.Item>
-    <Breadcrumb.Separator />
-    <Breadcrumb.Item>
-      <Breadcrumb.Link href="/productos">Productos</Breadcrumb.Link>
-    </Breadcrumb.Item>
-    <Breadcrumb.Separator />
-    <Breadcrumb.Item class="font-medium text-md text-primary">
-      <Breadcrumb.Page class="font-medium text-md text-primary">Nuevo producto</Breadcrumb.Page>
-    </Breadcrumb.Item>
-  </Breadcrumb.List>
-</Breadcrumb.Root>
+ 
 
   <a
     href="/productos"
