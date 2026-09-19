@@ -11,9 +11,25 @@
   import Menu from "@lucide/svelte/icons/menu";
   import UserNav from "./UserNav.svelte";
   import CommandMenu from "$lib/components/commandMenu/CommandMenu.svelte";
+  import Maximize from "@lucide/svelte/icons/maximize";
+  import Minimize from "@lucide/svelte/icons/minimize";
+  import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
+  import { getBreadcrumbs } from "$lib/utils/breadcrumbs";
 
   let commandMenuAbierto = $state(false);
+  let pantallaCompleta = $state(false);
 
+  function alternarPantallaCompleta() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  function actualizarEstado() {
+    pantallaCompleta = !!document.fullscreenElement;
+  }
 
   const notificaciones = [
     {
@@ -35,8 +51,11 @@
       tiempo: "Hace 3 horas",
     },
   ];
+
+  const breadcrumbs = $derived(getBreadcrumbs($page.url.pathname));
 </script>
 
+<svelte:document onfullscreenchange={actualizarEstado} />
 <header
   class="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6"
 >
@@ -45,31 +64,47 @@
       <Menu class="h-5 w-5" />
     </Sidebar.Trigger>
     <div class="hidden flex-col sm:flex">
-      <h1 class="text-base font-semibold leading-none tracking-tight">
-        {#if $page.url.pathname === "/dashboard" || $page.url.pathname === "/"}
-          Dashboard
-        {:else if $page.url.pathname.startsWith("/productos")}
-          Productos
-        {:else if $page.url.pathname.startsWith("/pedidos")}
-          Pedidos
-        {:else if $page.url.pathname.startsWith("/ventas")}
-          Ventas
-        {:else if $page.url.pathname.startsWith("/usuarios")}
-          Usuarios
-        {:else if $page.url.pathname.startsWith("/configuracion")}
-          Configuración
-        {:else if $page.url.pathname.startsWith("/ayuda")}
-          Ayuda
-        {:else}
-          Panel
-        {/if}
-      </h1>
+      <Breadcrumb.Root>
+        <Breadcrumb.List>
+          {#each breadcrumbs as item, i}
+            <Breadcrumb.Item>
+              {#if i === breadcrumbs.length - 1}
+                <Breadcrumb.Page
+                  class="text-base font-semibold text-foreground"
+                >
+                  {item.label}
+                </Breadcrumb.Page>
+              {:else}
+                <Breadcrumb.Link href={item.href}>{item.label}</Breadcrumb.Link>
+              {/if}
+            </Breadcrumb.Item>
+            {#if i < breadcrumbs.length - 1}
+              <Breadcrumb.Separator />
+            {/if}
+          {/each}
+        </Breadcrumb.List>
+      </Breadcrumb.Root>
       <p class="text-xs text-muted-foreground mt-1">
         Gestiona tu negocio en tiempo real
       </p>
     </div>
   </div>
   <div class="ml-auto flex items-center gap-2 md:gap-3">
+    <Button
+      variant="ghost"
+      size="icon"
+      onclick={alternarPantallaCompleta}
+      title={pantallaCompleta
+        ? "Salir de pantalla completa"
+        : "Pantalla completa"}
+    >
+      {#if pantallaCompleta}
+        <Minimize class="h-5 w-5" />
+      {:else}
+        <Maximize class="h-5 w-5" />
+      {/if}
+    </Button>
+
     <button
       type="button"
       onclick={() => (commandMenuAbierto = true)}
