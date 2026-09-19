@@ -15,6 +15,7 @@
   import Minimize from "@lucide/svelte/icons/minimize";
   import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
   import { getBreadcrumbs } from "$lib/utils/breadcrumbs";
+  import SyncIndicator from "./SyncIndicator.svelte";
 
   let commandMenuAbierto = $state(false);
   let pantallaCompleta = $state(false);
@@ -104,7 +105,8 @@
         <Maximize class="h-5 w-5" />
       {/if}
     </Button>
-
+    <SyncIndicator />
+    
     <button
       type="button"
       onclick={() => (commandMenuAbierto = true)}
