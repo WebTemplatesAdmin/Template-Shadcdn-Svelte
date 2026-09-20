@@ -42,13 +42,13 @@
 
   <div class="rounded-md border overflow-hidden">
     <Table.Root>
-      <Table.Header class="thead-custom-bg">
+      <Table.Header class="bg-[#f8f8f8] dark:bg-muted">
         {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
           <Table.Row>
             {#each headerGroup.headers as header (header.id)}
               <Table.Head
                 colspan={header.colSpan}
-                class="text-black !font-extrabold border-r border-white/20 last:border-r-0 py-1"
+                class="text-black dark:text-foreground font-extrabold border-r border-gray-200 dark:border-border last:border-r-0 py-1"
               >
                 {#if !header.isPlaceholder}
                   <FlexRender {header} />
@@ -62,7 +62,7 @@
         {#each table.getRowModel().rows as row (row.id)}
           <Table.Row data-state={row.getIsSelected() && "selected"}>
             {#each row.getVisibleCells() as cell (cell.id)}
-              <Table.Cell class="border-r border-gray-200 last:border-r-0 py-0">
+              <Table.Cell class="border-r border-gray-200 last:border-r-0 dark:border-border last:border-r-0 py-0">
                 <FlexRender {cell} />
               </Table.Cell>
             {/each}
