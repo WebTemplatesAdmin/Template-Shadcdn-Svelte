@@ -16,6 +16,7 @@
   import { getBreadcrumbs } from "$lib/utils/breadcrumbs";
   import SyncIndicator from "./SyncIndicator.svelte";
   import BranchSelector from "./BranchSelector.svelte";
+  import ThemeToggle from "./ThemeToggle.svelte";
 
   let commandMenuAbierto = $state(false);
   let pantallaCompleta = $state(false);
@@ -184,6 +185,8 @@
     </DropdownMenu.Root>
 
     <UserNav />
+
+    <ThemeToggle />
   </div>
 </header>
 
