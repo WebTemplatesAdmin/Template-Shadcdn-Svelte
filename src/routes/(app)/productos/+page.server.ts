@@ -1,6 +1,8 @@
 import type { PageServerLoad } from './$types';
 import type { Producto } from "./table/columns";
 
+
+
 export const load: PageServerLoad = async ({ locals }) => {
    return {
     productos: obtenerProductos(), // 👈 SIN await — se retorna la promesa tal cual
