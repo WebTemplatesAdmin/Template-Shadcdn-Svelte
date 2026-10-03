@@ -7,8 +7,12 @@ const presentacionSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido"), // ej: "Six-pack", "Caja x24"
   sku: z.string().min(1, "El SKU es requerido"),
   codigoBarras: z.string().optional(),
-  unidadesPorPaquete: z.coerce.number().int().min(2, "Debe ser un paquete de 2 o más unidades"),
+  unidadesPorPaquete: z.coerce
+    .number()
+    .int()
+    .min(2, "Debe ser un paquete de 2 o más unidades"),
   price: z.coerce.number().positive("El precio debe ser mayor a 0"),
+  imagen: z.string().default(""), // opcional, 1 sola imagen por presentación
 });
 
 export const productoSchema = z.object({
@@ -44,6 +48,9 @@ export const productoSchema = z.object({
   // ============ Estado ============
   status: z.enum(["activo", "inactivo", "borrador"]).default("activo"),
   featured: z.boolean().default(false),
+
+  // ============ Imágenes (opcional, nunca bloquea) ============
+  imagenes: z.array(z.string()).default([]),
 });
 
 export type ProductoSchema = typeof productoSchema;
