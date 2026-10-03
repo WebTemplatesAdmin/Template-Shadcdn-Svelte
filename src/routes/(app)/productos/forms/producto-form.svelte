@@ -14,6 +14,8 @@
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import { Toaster, toast } from "svelte-sonner";
   import type { SuperValidated, Infer } from "sveltekit-superforms";
+  import ImageIcon from "@lucide/svelte/icons/image";
+  import X from "@lucide/svelte/icons/x";
 
   let {
     form: formProp,
@@ -34,6 +36,11 @@
 
   const { form: formData, enhance, submitting } = form;
 
+  let inputArchivos: HTMLInputElement | null = $state(null);
+  let inputImagenPresentacion: HTMLInputElement | null = $state(null);
+  let indicePresentacionActual = $state<number | null>(null);
+  const MAX_MB = 2;
+
   let categorias = $state([
     "gaseosa",
     "agua",
@@ -53,19 +60,6 @@
     return (((venta - costo) / costo) * 100).toFixed(1);
   });
 
-  function agregarPresentacion() {
-    $formData.presentaciones = [
-      ...$formData.presentaciones,
-      {
-        nombre: "",
-        sku: "",
-        codigoBarras: "",
-        unidadesPorPaquete: 2,
-        price: 0,
-      },
-    ];
-  }
-
   function eliminarPresentacion(index: number) {
     $formData.presentaciones = $formData.presentaciones.filter(
       (_, i) => i !== index,
@@ -83,6 +77,88 @@
     dialogNuevaCategoriaAbierto = false;
     toast.success("Categoría creada con éxito");
     // TODO: llamar a tu products-ms para guardar la categoría permanentemente
+  }
+
+  function abrirSelectorArchivos() {
+    inputArchivos?.click();
+  }
+
+  async function manejarArchivos(evento: Event) {
+    const input = evento.currentTarget as HTMLInputElement;
+    const archivos = Array.from(input.files ?? []);
+
+    for (const archivo of archivos) {
+      if (!archivo.type.startsWith("image/")) {
+        toast.error(`"${archivo.name}" no es una imagen`);
+        continue;
+      }
+      if (archivo.size > MAX_MB * 1024 * 1024) {
+        toast.error(`"${archivo.name}" supera los ${MAX_MB} MB`);
+        continue;
+      }
+      const dataUrl = await leerComoDataUrl(archivo);
+      $formData.imagenes = [...$formData.imagenes, dataUrl];
+    }
+
+    input.value = ""; // permite volver a elegir el mismo archivo
+  }
+
+  function agregarPresentacion() {
+    $formData.presentaciones = [
+      ...$formData.presentaciones,
+      {
+        nombre: "",
+        sku: "",
+        codigoBarras: "",
+        unidadesPorPaquete: 2,
+        price: 0,
+        imagen: "",
+      },
+    ];
+  }
+
+  // TODO: cuando exista tu endpoint de subida, reemplaza esto por el upload
+  // y guarda la URL devuelta en lugar del base64.
+  function leerComoDataUrl(archivo: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const lector = new FileReader();
+      lector.onload = () => resolve(lector.result as string);
+      lector.onerror = () => reject(lector.error);
+      lector.readAsDataURL(archivo);
+    });
+  }
+
+  function eliminarImagen(index: number) {
+    $formData.imagenes = $formData.imagenes.filter((_, i) => i !== index);
+  }
+
+  function abrirSelectorImagenPresentacion(index: number) {
+    indicePresentacionActual = index;
+    inputImagenPresentacion?.click();
+  }
+
+  async function manejarImagenPresentacion(evento: Event) {
+    const input = evento.currentTarget as HTMLInputElement;
+    const archivo = input.files?.[0];
+    const index = indicePresentacionActual;
+    if (!archivo || index === null) {
+      input.value = "";
+      return;
+    }
+    if (!archivo.type.startsWith("image/")) {
+      toast.error(`" ${archivo.name} " no es una imagen`);
+      input.value = "";
+      return;
+    }
+    if (archivo.size > MAX_MB * 1024 * 1024) {
+      toast.error(`" ${archivo.name} " supera los ${MAX_MB} MB`);
+      input.value = "";
+      return;
+    }
+
+    $formData.presentaciones[index].imagen = await leerComoDataUrl(archivo);
+    input.value = "";
+    indicePresentacionActual = null;
   }
 </script>
 
@@ -103,7 +179,8 @@
       </p>
     </div>
     <div class="hidden items-center gap-3 sm:flex">
-      <Button type="button" variant="outline" href="/productos">Cancelar</Button>
+      <Button type="button" variant="outline" href="/productos">Cancelar</Button
+      >
       <Button
         type="submit"
         form="form-producto"
@@ -119,6 +196,77 @@
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <!-- Columna principal -->
       <div class="space-y-6 lg:col-span-2">
+        <!-- Imágenes (opcional) -->
+        <div class="rounded-lg border bg-card p-6">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-medium text-muted-foreground">
+                Imágenes
+                <span class="font-normal text-muted-foreground/70"
+                  >(opcional)</span
+                >
+              </h2>
+              <p class="text-xs text-muted-foreground">
+                Puedes agregarlas ahora o más tarde. La primera será la
+                principal.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onclick={abrirSelectorArchivos}
+            >
+              <Plus class="mr-2 h-4 w-4" />
+              Agregar
+            </Button>
+          </div>
+
+          <!-- Input de archivos oculto: lo dispara el botón "Agregar" -->
+          <input
+            bind:this={inputArchivos}
+            type="file"
+            accept="image/*"
+            multiple
+            class="hidden"
+            onchange={manejarArchivos}
+          />
+
+          {#if $formData.imagenes.length > 0}
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {#each $formData.imagenes as url, i}
+                <div
+                  class="group relative aspect-square overflow-hidden rounded-md border bg-muted"
+                >
+                  <img
+                    src={url}
+                    alt={`Imagen ${i + 1} del producto`}
+                    class="h-full w-full object-cover"
+                  />
+                  {#if i === 0}
+                    <span
+                      class="absolute left-1.5 top-1.5 rounded bg-primary px-1.5 py-0.5 text-[10px] font-medium text-white"
+                    >
+                      Principal
+                    </span>
+                  {/if}
+                  <button
+                    type="button"
+                    aria-label={`Eliminar imagen ${i + 1}`}
+                    onclick={() => eliminarImagen(i)}
+                    class="absolute right-1.5 top-1.5 rounded-md bg-background/90 p-1 opacity-0 transition-opacity group-hover:opacity-100"
+                  >
+                    <Trash2 class="h-3.5 w-3.5 text-destructive" />
+                  </button>
+                </div>
+              {/each}
+            </div>
+          {:else}
+            <p class="py-6 text-center text-sm text-muted-foreground">
+              Sin imágenes. Puedes crear el producto igual y agregarlas después.
+            </p>
+          {/if}
+        </div>
         <!-- General -->
         <div class="rounded-lg border bg-card p-6">
           <h2 class="mb-4 text-sm font-medium text-muted-foreground">
@@ -379,6 +527,14 @@
                 El stock se descuenta siempre de las unidades individuales
               </p>
             </div>
+
+            <input
+              bind:this={inputImagenPresentacion}
+              type="file"
+              accept="image/*"
+              class="hidden"
+              onchange={manejarImagenPresentacion}
+            />
             <Button
               type="button"
               variant="outline"
@@ -393,8 +549,41 @@
           <div class="space-y-3">
             {#each $formData.presentaciones as _, i}
               <div
-                class="grid grid-cols-[1fr_1fr_1fr_1fr_auto] items-end gap-3 rounded-md border p-3"
+                class="grid grid-cols-[auto_1fr_1fr_1fr_1fr_auto] items-end gap-3 rounded-md border p-3"
               >
+                <!-- Imagen (opcional, 1 sola) -->
+                <div class="space-y-1">
+                  <span class="text-xs text-muted-foreground">Imagen</span>
+                  <div class="relative h-9 w-9">
+                    <button
+                      type="button"
+                      onclick={() => abrirSelectorImagenPresentacion(i)}
+                      aria-label={`Imagen de la presentación ${i + 1}`}
+                      class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-md border bg-muted hover:border-primary"
+                    >
+                      {#if $formData.presentaciones[i].imagen}
+                        <img
+                          src={$formData.presentaciones[i].imagen}
+                          alt=""
+                          class="h-full w-full object-cover"
+                        />
+                      {:else}
+                        <ImageIcon class="h-4 w-4 text-muted-foreground" />
+                      {/if}
+                    </button>
+                    {#if $formData.presentaciones[i].imagen}
+                      <button
+                        type="button"
+                        aria-label={`Quitar imagen de la presentación ${i + 1}`}
+                        onclick={() => ($formData.presentaciones[i].imagen = "")}
+                        class="absolute -right-1.5 -top-1.5 rounded-full border bg-background p-0.5"
+                      >
+                        <X class="h-3 w-3 text-destructive" />
+                      </button>
+                    {/if}
+                  </div>
+                </div>
+
                 <div class="space-y-1">
                   <label
                     class="text-xs text-muted-foreground"
