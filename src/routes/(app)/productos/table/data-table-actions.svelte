@@ -5,6 +5,7 @@
   import MoreHorizontal from "@lucide/svelte/icons/more-horizontal";
   import ConfirmDialog from "$lib/components/confirmDialog/ConfirmDialog.svelte";
   import { toast, Toaster } from "svelte-sonner";
+  import { goto } from "$app/navigation";
 
   let {
     id,
@@ -28,7 +29,7 @@
     {/snippet}
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="end">
-    <DropdownMenu.Item onclick={() => console.log("Editar", id)}>
+    <DropdownMenu.Item onclick={() => goto(`/productos/${id}/editar`)}>
       Editar
     </DropdownMenu.Item>
     <DropdownMenu.Item
