@@ -23,7 +23,14 @@ export type Producto = {
   stock: number;
   minStock: number;
   category: string;
-  imageUrl?: string;
+  imagenes?: string[];
+
+  // Campos propios del negocio que Fake Store NO tiene.
+  // Tu backend real (products-ms) sí los enviará; aquí van opcionales
+  // para poder pre-rellenar el formulario sin romper el tipado.
+  volumen?: number;
+  tipoEnvase?: "vidrio" | "pet" | "lata" | "tetrapak";
+  costPrice?: number;
 };
 
 // Forma CRUDA que devuelve Fake Store API — casi nunca coincide
@@ -48,6 +55,12 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 480,
     minStock: 40,
     category: "gaseosa",
+    // 3 imágenes para probar la galería con varias
+    imagenes: [
+      "https://placehold.co/400x400/dc2626/ffffff?text=Coca-Cola",
+      "https://placehold.co/400x400/1a1a1a/ffffff?text=Coca-Cola+6-pack",
+      "https://placehold.co/400x400/374151/ffffff?text=Coca-Cola+12-pack",
+    ],
   },
   {
     id: 2,
@@ -56,6 +69,7 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 1200,
     minStock: 100,
     category: "agua",
+    imagenes: ["https://placehold.co/400x400/0ea5e9/ffffff?text=Agua+600ml"],
   },
   {
     id: 3,
@@ -64,6 +78,7 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 320,
     minStock: 50,
     category: "cerveza",
+    imagenes: ["https://placehold.co/400x400/f59e0b/ffffff?text=Aguila+330ml"],
   },
   {
     id: 4,
@@ -72,6 +87,7 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 210,
     minStock: 30,
     category: "jugo",
+    imagenes: ["https://placehold.co/400x400/7c3aed/ffffff?text=Hit+Mora"],
   },
   {
     id: 5,
@@ -80,6 +96,7 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 90,
     minStock: 24,
     category: "energizante",
+    imagenes: ["https://placehold.co/400x400/16a34a/ffffff?text=Speed+Max"],
   },
   {
     id: 6,
@@ -88,6 +105,7 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 640,
     minStock: 60,
     category: "gaseosa",
+    imagenes: ["https://placehold.co/400x400/9333ea/ffffff?text=Postobon+Uva"],
   },
   {
     id: 7,
@@ -96,6 +114,7 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 0,
     minStock: 30,
     category: "agua",
+    imagenes: ["https://placehold.co/400x400/0891b2/ffffff?text=Agua+con+Gas"],
   },
   {
     id: 8,
@@ -104,6 +123,7 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 145,
     minStock: 36,
     category: "otro",
+    imagenes: ["https://placehold.co/400x400/78350f/ffffff?text=Pony+Malta"],
   },
 ];
 
@@ -142,7 +162,7 @@ function mapFakeStoreProduct(raw: FakeStoreProduct): Producto {
     name: raw.title,
     price: raw.price,
     category: raw.category,
-    imageUrl: raw.image,
+    imagenes: raw.image ? [raw.image] : [],
     // Fake Store API no maneja inventario real; lo simulamos
     // con el "count" del rating para tener datos variados.
     stock: raw.rating.count,
@@ -176,7 +196,7 @@ export async function obtenerProductoPorId(
   try {
     const res = await fetchConTimeout(
       fetchFn,
-      `${PRODUCTS_API_URL}/products/ ${id} `,
+      `${PRODUCTS_API_URL}/products/${id}`,
     );
     if (!res.ok) throw new Error(`HTTP ${res.status} `);
     const data: FakeStoreProduct = await res.json();
