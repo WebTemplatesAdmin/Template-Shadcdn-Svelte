@@ -19,13 +19,12 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
   // 👇 LA CLAVE: pasar datos al schema → formulario PRE-RELLENADO
   const form = await superValidate(
     {
-      name: producto.name,
-      price: producto.price,
-      stock: producto.stock,
-      minStock: producto.minStock,
-      category: producto.category,
-      // volumen, tipoEnvase, brand, etc. → los completa el mapper
-      // cuando conectes tu products-ms real (hoy Fake Store no los tiene)
+      ...producto,
+      // Fallbacks para los campos que Fake Store no tiene (evita que el form
+      // se abra inválido por volumen / tipoEnvase / costPrice obligatorios):
+      volumen: producto.volumen ?? 1,
+      tipoEnvase: producto.tipoEnvase ?? "pet",
+      costPrice: producto.costPrice ?? 0,
     },
     zod4(productoSchema),
   );
