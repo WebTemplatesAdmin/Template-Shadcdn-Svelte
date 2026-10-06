@@ -10,4 +10,6 @@
   titulo="Editar producto"
   descripcion="Actualiza los datos del producto"
   textoBoton="Guardar cambios"
+  historial={data.historial}
+  enlaceHistorial={`/ productos /${data.id}/ historial `}
 />

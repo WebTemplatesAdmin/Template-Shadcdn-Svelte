@@ -14,6 +14,7 @@
  */
 
 import { env } from "$env/dynamic/private";
+import type { EventoProducto } from "$lib/types/producto";
 
 // Forma de dato que espera el RESTO de tu aplicación
 export type Producto = {
@@ -31,6 +32,8 @@ export type Producto = {
   volumen?: number;
   tipoEnvase?: "vidrio" | "pet" | "lata" | "tetrapak";
   costPrice?: number;
+  sku?: string;
+  codigoBarras?: string;
 };
 
 // Forma CRUDA que devuelve Fake Store API — casi nunca coincide
@@ -55,6 +58,8 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 480,
     minStock: 40,
     category: "gaseosa",
+    sku: "COCA-350",
+    codigoBarras: "7701234567890",
     // 3 imágenes para probar la galería con varias
     imagenes: [
       "https://placehold.co/400x400/dc2626/ffffff?text=Coca-Cola",
@@ -69,6 +74,8 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 1200,
     minStock: 100,
     category: "agua",
+    sku: "AGUA-600-1",
+    codigoBarras: "7701234567890",
     imagenes: ["https://placehold.co/400x400/0ea5e9/ffffff?text=Agua+600ml"],
   },
   {
@@ -78,6 +85,8 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 320,
     minStock: 50,
     category: "cerveza",
+    sku: "CERVE-330",
+    codigoBarras: "7701234567890",
     imagenes: ["https://placehold.co/400x400/f59e0b/ffffff?text=Aguila+330ml"],
   },
   {
@@ -87,6 +96,8 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 210,
     minStock: 30,
     category: "jugo",
+    sku: "JUGO-500",
+    codigoBarras: "7701234567890",
     imagenes: ["https://placehold.co/400x400/7c3aed/ffffff?text=Hit+Mora"],
   },
   {
@@ -96,6 +107,8 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 90,
     minStock: 24,
     category: "energizante",
+    sku: "SPEED-400",
+    codigoBarras: "7701234567890",
     imagenes: ["https://placehold.co/400x400/16a34a/ffffff?text=Speed+Max"],
   },
   {
@@ -105,6 +118,8 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 640,
     minStock: 60,
     category: "gaseosa",
+    sku: "POSTO-400",
+    codigoBarras: "7701234567890",
     imagenes: ["https://placehold.co/400x400/9333ea/ffffff?text=Postobon+Uva"],
   },
   {
@@ -114,6 +129,8 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 0,
     minStock: 30,
     category: "agua",
+    sku: "AGUA-500-1",
+    codigoBarras: "7701234567890",
     imagenes: ["https://placehold.co/400x400/0891b2/ffffff?text=Agua+con+Gas"],
   },
   {
@@ -123,6 +140,8 @@ const MOCK_PRODUCTOS: Producto[] = [
     stock: 145,
     minStock: 36,
     category: "otro",
+    sku: "PONY-330",
+    codigoBarras: "7701234567890",
     imagenes: ["https://placehold.co/400x400/78350f/ffffff?text=Pony+Malta"],
   },
 ];
@@ -274,3 +293,66 @@ export async function actualizarProducto(
  *   }
  * ------------------------------------------------------------
  */
+
+
+// ───────────────────────────────────────────────────────────────
+// HISTORIAL / EVENTOS RELACIONADOS CON EL PRODUCTO
+// ───────────────────────────────────────────────────────────────
+
+// Datos de prueba por producto.
+// TODO: reemplazar por GET /productos/:id/historial en tu products-ms
+const MOCK_HISTORIAL: Record<number, EventoProducto[]> = {
+  1: [
+    {
+      id: 1,
+      tipo: "promocion",
+      titulo: 'Promoción "2x1 Gaseosas"',
+      detalle: "El producto participó en la promo de fin de semana.",
+      fecha: "2026-03-01T09:00:00.000Z",
+      enlace: "/promociones/12",
+    },
+    {
+      id: 2,
+      tipo: "precio",
+      titulo: "Cambio de precio",
+      detalle: "3.500 → 3.200 (rebaja del 8.6%)",
+      fecha: "2026-02-20T15:30:00.000Z",
+    },
+    {
+      id: 3,
+      tipo: "stock",
+      titulo: "Entrada de stock",
+      detalle: "+480 unidades ingresadas al almacén.",
+      fecha: "2026-02-14T11:10:00.000Z",
+    },
+    {
+      id: 4,
+      tipo: "venta",
+      titulo: "Venta destacada",
+      detalle: "120 unidades vendidas en el último pedido.",
+      fecha: "2026-02-10T17:45:00.000Z",
+    },
+  ],
+};
+
+export async function obtenerHistorialProducto(
+  fetchFn: typeof globalThis.fetch,
+  id: number,
+): Promise<EventoProducto[]> {
+  if (USE_MOCK_DATA) return MOCK_HISTORIAL[id] ?? [];
+
+  try {
+    const res = await fetchConTimeout(
+      fetchFn,
+      `${PRODUCTS_API_URL}/products/${id}/historial`,
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as EventoProducto[];
+  } catch (e) {
+    console.warn(
+      "[productos.api] Historial no disponible → usando MOCK:",
+      e instanceof Error ? e.message : e,
+    );
+    return MOCK_HISTORIAL[id] ?? [];
+  }
+}

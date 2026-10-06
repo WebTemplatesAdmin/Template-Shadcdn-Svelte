@@ -16,17 +16,28 @@
   import type { SuperValidated, Infer } from "sveltekit-superforms";
   import ImageIcon from "@lucide/svelte/icons/image";
   import X from "@lucide/svelte/icons/x";
+  import Tag from "@lucide/svelte/icons/tag";
+  import TrendingDown from "@lucide/svelte/icons/trending-down";
+  import PackagePlus from "@lucide/svelte/icons/package-plus";
+  import ShoppingCart from "@lucide/svelte/icons/shopping-cart";
+  import Sparkles from "@lucide/svelte/icons/sparkles";
+  import ArrowRight from "@lucide/svelte/icons/arrow-right";
+  import type { EventoProducto } from "$lib/types/producto";
 
   let {
     form: formProp,
     titulo,
     descripcion,
     textoBoton,
+    historial,
+    enlaceHistorial,
   }: {
     form: SuperValidated<Infer<ProductoSchema>>;
     titulo: string;
     descripcion: string;
     textoBoton: string;
+    historial?: EventoProducto[];
+    enlaceHistorial?: string;
   } = $props();
 
   // svelte-ignore state_referenced_locally: falso positivo conocido de Superforms
@@ -116,7 +127,6 @@
       },
     ];
   }
-
   // TODO: cuando exista tu endpoint de subida, reemplaza esto por el upload
   // y guarda la URL devuelta en lugar del base64.
   function leerComoDataUrl(archivo: File): Promise<string> {
@@ -159,6 +169,22 @@
     $formData.presentaciones[index].imagen = await leerComoDataUrl(archivo);
     input.value = "";
     indicePresentacionActual = null;
+  }
+
+  const ICONO_EVENTO = {
+    promocion: Tag,
+    precio: TrendingDown,
+    stock: PackagePlus,
+    venta: ShoppingCart,
+    creacion: Sparkles,
+  } as const;
+
+  function formatearFecha(iso: string): string {
+    return new Date(iso).toLocaleDateString("es-CO", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
   }
 </script>
 
@@ -303,6 +329,24 @@
               placeholder="Coca-Cola Company"
               bind:value={$formData.brand}
             />
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <InputFieldV2
+                {form}
+                name="sku"
+                label="SKU"
+                placeholder="COCA-350"
+                bind:value={$formData.sku}
+              />
+
+              <InputFieldV2
+                {form}
+                name="codigoBarras"
+                label="Código de barras"
+                placeholder="7701234567890"
+                bind:value={$formData.codigoBarras}
+              />
+            </div>
           </div>
         </div>
 
@@ -575,7 +619,8 @@
                       <button
                         type="button"
                         aria-label={`Quitar imagen de la presentación ${i + 1}`}
-                        onclick={() => ($formData.presentaciones[i].imagen = "")}
+                        onclick={() =>
+                          ($formData.presentaciones[i].imagen = "")}
                         class="absolute -right-1.5 -top-1.5 rounded-full border bg-background p-0.5"
                       >
                         <X class="h-3 w-3 text-destructive" />
@@ -732,6 +777,72 @@
               </div>
             </div>
           </div>
+
+          <!-- Información relacionada (solo lectura; solo se muestra en edición) -->
+          {#if historial}
+            <div class="rounded-lg border bg-card p-6">
+              <h2 class="mb-4 text-sm font-medium text-muted-foreground">
+                Información relacionada
+              </h2>
+
+              {#if historial.length === 0}
+                <p class="text-sm text-muted-foreground">
+                  Sin eventos registrados para este producto.
+                </p>
+              {:else}
+                <ul class="space-y-4">
+                  {#each historial as evento (evento.id)}
+                    <li class="flex gap-3">
+                      <div
+                        class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted"
+                      >
+                        <!-- svelte-ignore svelte_component_deprecated -->
+                        <svelte:component
+                          this={ICONO_EVENTO[evento.tipo]}
+                          class="h-4 w-4 text-muted-foreground"
+                        />
+                      </div>
+                      <div class="min-w-0 flex-1 space-y-0.5">
+                        <div class="flex items-start justify-between gap-2">
+                          <p class="text-sm font-medium leading-tight">
+                            {evento.titulo}
+                          </p>
+                          <span
+                            class="shrink-0 text-[11px] text-muted-foreground"
+                          >
+                            {formatearFecha(evento.fecha)}
+                          </span>
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                          {evento.detalle}
+                        </p>
+                        {#if evento.enlace}
+                          <a
+                            href={evento.enlace}
+                            class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                          >
+                            Ver detalle
+                            <ArrowRight class="h-3 w-3" />
+                          </a>
+                        {/if}
+                      </div>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+
+              {#if enlaceHistorial}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="mt-4 w-full"
+                  href={enlaceHistorial}
+                >
+                  Ver historial completo
+                </Button>
+              {/if}
+            </div>
+          {/if}
         </div>
       </div>
     </div>
