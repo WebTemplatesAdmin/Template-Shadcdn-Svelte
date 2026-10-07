@@ -31,6 +31,7 @@
     textoBoton,
     historial,
     enlaceHistorial,
+    modo = "crear",
   }: {
     form: SuperValidated<Infer<ProductoSchema>>;
     titulo: string;
@@ -38,7 +39,12 @@
     textoBoton: string;
     historial?: EventoProducto[];
     enlaceHistorial?: string;
+    /** "crear" = alta (todo editable) · "editar" = bloquea campos de identidad */
+    modo?: "crear" | "editar";
   } = $props();
+
+  // En edición se bloquean los campos que definen la identidad del producto.
+  const esEdicion = $derived(modo === "editar");
 
   // svelte-ignore state_referenced_locally: falso positivo conocido de Superforms
   const form = superForm(formProp, {
@@ -336,6 +342,10 @@
                 name="sku"
                 label="SKU"
                 placeholder="COCA-350"
+                readonly={esEdicion}
+                inputClass={esEdicion
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
+                  : ""}
                 bind:value={$formData.sku}
               />
 
@@ -344,6 +354,10 @@
                 name="codigoBarras"
                 label="Código de barras"
                 placeholder="7701234567890"
+                readonly={esEdicion}
+                inputClass={esEdicion
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
+                  : ""}
                 bind:value={$formData.codigoBarras}
               />
             </div>
