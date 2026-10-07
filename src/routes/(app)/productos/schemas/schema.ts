@@ -22,6 +22,8 @@ export const productoSchema = z.object({
   category: z.string().min(1, "Selecciona una categoría"),
   brand: z.string().optional(),
   supplierId: z.string().optional(),
+  sku: z.string().min(1, "El SKU es requerido").max(50),
+  codigoBarras: z.string().max(50).optional(),
 
   // ============ Específico de bebidas ============
   volumen: z.coerce.number().positive("El volumen debe ser mayor a 0"),

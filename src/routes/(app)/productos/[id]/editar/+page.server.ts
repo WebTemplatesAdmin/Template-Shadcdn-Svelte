@@ -2,7 +2,7 @@ import { error, fail, redirect } from "@sveltejs/kit";
 import { superValidate } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
 import { productoSchema } from "../../schemas/schema";
-import { obtenerProductoPorId } from "$lib/server/api/productos.api";
+import { obtenerProductoPorId, obtenerHistorialProducto } from "$lib/server/api/productos.api";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async ({ params, fetch }) => {
@@ -29,7 +29,7 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
     zod4(productoSchema),
   );
 
-  return { form, id };
+  return { form, id, historial : await obtenerHistorialProducto (fetch, id), };
 };
 
 export const actions: Actions = {
