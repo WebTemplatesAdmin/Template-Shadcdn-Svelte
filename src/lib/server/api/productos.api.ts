@@ -14,27 +14,11 @@
  */
 
 import { env } from "$env/dynamic/private";
-import type { EventoProducto } from "$lib/types/producto";
+import type { EventoProducto, Producto } from "$lib/types/producto";
 
-// Forma de dato que espera el RESTO de tu aplicación
-export type Producto = {
-  id: number;
-  name: string;
-  price: number;
-  stock: number;
-  minStock: number;
-  category: string;
-  imagenes?: string[];
-
-  // Campos propios del negocio que Fake Store NO tiene.
-  // Tu backend real (products-ms) sí los enviará; aquí van opcionales
-  // para poder pre-rellenar el formulario sin romper el tipado.
-  volumen?: number;
-  tipoEnvase?: "vidrio" | "pet" | "lata" | "tetrapak";
-  costPrice?: number;
-  sku?: string;
-  codigoBarras?: string;
-};
+// El tipo de producto se define una sola vez en $lib/types (client-safe)
+// y se re-exporta aquí para no romper los imports existentes.
+export type { Producto };
 
 // Forma CRUDA que devuelve Fake Store API — casi nunca coincide
 // exactamente con lo que tu UI necesita mostrar.

@@ -26,11 +26,11 @@
   <AppSidebar />
 
   <!-- Inset = área derecha con padding auto ajustado según ancho sidebar -->
-  <Sidebar.Inset>
+  <Sidebar.Inset class="min-w-0">
 
 	<AppNavbar />
 
-    <main class="flex-1 p-4 md:p-6 lg:p-8">
+    <main class="min-w-0 flex-1 p-4 md:p-6 lg:p-8">
       {@render children()}
     </main>
 

@@ -35,12 +35,12 @@
 
 <div class="space-y-4">
   {#if toolbar}
-    <div class="flex items-center justify-between gap-4 py-4">
+    <div class="flex flex-wrap items-center justify-between gap-4 py-4">
       {@render toolbar({ table })}
     </div>
   {/if}
 
-  <div class="rounded-md border overflow-hidden">
+  <div class="rounded-md border overflow-x-auto">
     <Table.Root>
       <Table.Header class="bg-[#f8f8f8] dark:bg-muted">
         {#each table.getHeaderGroups() as headerGroup (headerGroup.id)}
@@ -62,7 +62,9 @@
         {#each table.getRowModel().rows as row (row.id)}
           <Table.Row data-state={row.getIsSelected() && "selected"}>
             {#each row.getVisibleCells() as cell (cell.id)}
-              <Table.Cell class="border-r border-gray-200 last:border-r-0 dark:border-border last:border-r-0 py-0">
+              <Table.Cell
+                class="border-r border-gray-200 last:border-r-0 dark:border-border last:border-r-0 py-0"
+              >
                 <FlexRender {cell} />
               </Table.Cell>
             {/each}
