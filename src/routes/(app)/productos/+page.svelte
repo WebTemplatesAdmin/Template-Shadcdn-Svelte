@@ -1,6 +1,5 @@
 <script lang="ts">
   import DataTable from "$lib/components/data-table/data-table.svelte";
-  import { navigating } from "$app/state";
   import { createColumns, type Producto } from "./table/columns";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
@@ -115,9 +114,13 @@
   const columns = createColumns(eliminarProductoIndividual);
 </script>
 
+<svelte:head>
+  <title>Productos · Mis Ventas</title>
+</svelte:head>
+
 <div class="pr-16">
   <div class="min-w-0 flex-1">
-    {#await data.productos /* || cargandoManualmente */}
+    {#await data.productos}
       <DataTableSkeleton columnas={6} filas={10} />
     {:then productos}
       <DataTable data={productos} {columns}>
@@ -125,7 +128,7 @@
           <!-- ============ VERSIÓN MOBILE (< md) ============ -->
           <div class="flex w-full flex-col gap-2 md:hidden">
             <Input
-              placeholder="Buscar producto..."
+              placeholder="Buscar por nombre, SKU o código..."
               value={(table.getColumn("name")?.getFilterValue() as string) ??
                 ""}
               oninput={(e) =>
@@ -265,7 +268,7 @@
           <!-- ============ VERSIÓN DESKTOP (md+) ============ -->
           <div class="hidden md:flex flex-1 items-center gap-3">
             <Input
-              placeholder="Buscar producto..."
+              placeholder="Buscar por nombre, SKU o código..."
               value={(table.getColumn("name")?.getFilterValue() as string) ??
                 ""}
               oninput={(e) =>
@@ -365,7 +368,7 @@
             </div>
           </div>
 
-          <div class="hidden md:flex items-center gap-2 shrink-0">
+          <div class="hidden md:flex items-center gap-2 ml-auto">
             {#if table.getFilteredSelectedRowModel().rows.length > 0}
               <Button
                 variant="destructive"

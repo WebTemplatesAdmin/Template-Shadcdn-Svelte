@@ -16,13 +16,19 @@
   import type { SuperValidated, Infer } from "sveltekit-superforms";
   import ImageIcon from "@lucide/svelte/icons/image";
   import X from "@lucide/svelte/icons/x";
-  import Tag from "@lucide/svelte/icons/tag";
-  import TrendingDown from "@lucide/svelte/icons/trending-down";
-  import PackagePlus from "@lucide/svelte/icons/package-plus";
-  import ShoppingCart from "@lucide/svelte/icons/shopping-cart";
-  import Sparkles from "@lucide/svelte/icons/sparkles";
   import ArrowRight from "@lucide/svelte/icons/arrow-right";
+  import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
+  import Gauge from "@lucide/svelte/icons/gauge";
   import type { EventoProducto } from "$lib/types/producto";
+  import {
+    calcularMargen,
+    esMargenNegativo,
+    calcularValorInventario,
+    calcularPrecioConIva,
+    formatearMoneda,
+    formatearFecha,
+    ICONO_EVENTO,
+  } from "$lib/utils/producto";
 
   let {
     form: formProp,
@@ -70,12 +76,17 @@
   let nuevaCategoriaNombre = $state("");
   const envases = ["vidrio", "pet", "lata", "tetrapak"];
 
-  const margen = $derived.by(() => {
-    const costo = $formData.costPrice;
-    const venta = $formData.price;
-    if (!costo || !venta || costo === 0) return 0;
-    return (((venta - costo) / costo) * 100).toFixed(1);
-  });
+  // ============ KPIs derivados del producto (solo lectura) ============
+  const margen = $derived(calcularMargen($formData.costPrice, $formData.price));
+  const margenNegativo = $derived(
+    esMargenNegativo($formData.costPrice, $formData.price),
+  );
+  const valorInventario = $derived(
+    calcularValorInventario($formData.stock, $formData.costPrice),
+  );
+  const precioConIva = $derived(
+    calcularPrecioConIva($formData.price, $formData.taxRate),
+  );
 
   function eliminarPresentacion(index: number) {
     $formData.presentaciones = $formData.presentaciones.filter(
@@ -176,23 +187,11 @@
     input.value = "";
     indicePresentacionActual = null;
   }
-
-  const ICONO_EVENTO = {
-    promocion: Tag,
-    precio: TrendingDown,
-    stock: PackagePlus,
-    venta: ShoppingCart,
-    creacion: Sparkles,
-  } as const;
-
-  function formatearFecha(iso: string): string {
-    return new Date(iso).toLocaleDateString("es-CO", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  }
 </script>
+
+<svelte:head>
+  <title>{titulo} · Mis Ventas</title>
+</svelte:head>
 
 <div class="mx-auto max-w-5xl pb-24">
   <a
@@ -489,14 +488,6 @@
               />
             </div>
 
-            {#if $formData.costPrice > 0 && $formData.price > 0}
-              <p class="text-sm text-muted-foreground">
-                Margen de ganancia: <span class="font-medium text-foreground"
-                  >{margen}%</span
-                >
-              </p>
-            {/if}
-
             <div class="grid grid-cols-2 gap-4">
               <Form.Field {form} name="currency">
                 <Form.Control>
@@ -717,6 +708,62 @@
       <!-- Columna lateral: Categoría + Estado, sticky -->
       <div class="lg:col-span-1">
         <div class="sticky top-20 space-y-6">
+          {#if esEdicion}
+            <!-- Resumen / KPIs del producto (solo lectura) -->
+            <div
+              class="rounded-lg border border-primary/20 bg-primary/5 p-6 dark:bg-primary/10"
+            >
+              <h2
+                class="mb-4 flex items-center gap-2 text-sm font-medium text-foreground"
+              >
+                <Gauge class="h-4 w-4 text-primary" />
+                Resumen
+              </h2>
+
+              <div class="space-y-3">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-muted-foreground">Precio con IVA</span>
+                  <span class="text-base font-semibold text-foreground">
+                    {formatearMoneda(precioConIva, $formData.currency)}
+                  </span>
+                </div>
+
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-muted-foreground">Margen</span>
+                  <span
+                    class={margenNegativo
+                      ? "text-base font-semibold text-destructive"
+                      : "text-base font-semibold text-green-600 dark:text-green-500"}
+                  >
+                    {margen}%
+                  </span>
+                </div>
+
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-muted-foreground">Valor del inventario</span
+                  >
+                  <span class="text-base font-semibold text-foreground">
+                    {formatearMoneda(valorInventario, $formData.currency)}
+                  </span>
+                </div>
+              </div>
+
+              {#if margenNegativo}
+                <div
+                  class="mt-4 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-3"
+                >
+                  <TriangleAlert
+                    class="mt-0.5 h-4 w-4 shrink-0 text-destructive"
+                  />
+                  <p class="text-xs text-destructive">
+                    Estás vendiendo <strong>por debajo del costo</strong>.
+                    Revisa el precio de venta.
+                  </p>
+                </div>
+              {/if}
+            </div>
+          {/if}
+
           <div class="rounded-lg border bg-card p-6">
             <h2 class="mb-4 text-sm font-medium text-muted-foreground">
               Organización

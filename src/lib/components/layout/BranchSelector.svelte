@@ -18,7 +18,7 @@
 </script>
 
 <Select.Root type="single" bind:value={sucursalActiva}>
-  <Select.Trigger class="hidden h-9 w-[180px] gap-2 md:flex">
+  <Select.Trigger class="hidden h-9 w-[180px] gap-2 lg:flex">
     <Store class="h-4 w-4 shrink-0 text-muted-foreground" />
     <span class="truncate text-sm">{nombreActivo}</span>
   </Select.Trigger>
