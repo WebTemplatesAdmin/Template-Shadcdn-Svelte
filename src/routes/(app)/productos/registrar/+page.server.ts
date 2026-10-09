@@ -1,7 +1,7 @@
 import { fail, redirect } from "@sveltejs/kit";
 import { superValidate, message } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
-import { productoSchema } from "./schemas/schema";
+import { productoSchema } from "../schemas/schema";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async () => {

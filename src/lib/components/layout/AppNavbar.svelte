@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { cn } from "$lib/utils.js";
   import * as Sidebar from "$lib/components/ui/sidebar/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import { Input } from "$lib/components/ui/input/index.js";
@@ -15,6 +14,9 @@
   import Minimize from "@lucide/svelte/icons/minimize";
   import * as Breadcrumb from "$lib/components/ui/breadcrumb/index.js";
   import { getBreadcrumbs } from "$lib/utils/breadcrumbs";
+  import SyncIndicator from "./SyncIndicator.svelte";
+  import BranchSelector from "./BranchSelector.svelte";
+  import ThemeToggle from "./ThemeToggle.svelte";
 
   let commandMenuAbierto = $state(false);
   let pantallaCompleta = $state(false);
@@ -59,18 +61,20 @@
 <header
   class="sticky top-0 z-40 flex h-16 items-center gap-4 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:px-6"
 >
-  <div class="flex items-center gap-3 flex-1">
+  <div class="flex min-w-0 items-center gap-3 flex-1">
     <Sidebar.Trigger variant="ghost" size="icon">
       <Menu class="h-5 w-5" />
     </Sidebar.Trigger>
-    <div class="hidden flex-col sm:flex">
-      <Breadcrumb.Root>
-        <Breadcrumb.List>
+    <div class="hidden min-w-0 flex-col sm:flex">
+      <Breadcrumb.Root class="min-w-0">
+        <Breadcrumb.List class="min-w-0 flex-nowrap overflow-hidden">
           {#each breadcrumbs as item, i}
-            <Breadcrumb.Item>
+            <Breadcrumb.Item
+              class={i === breadcrumbs.length - 1 ? "min-w-0" : "shrink-0"}
+            >
               {#if i === breadcrumbs.length - 1}
                 <Breadcrumb.Page
-                  class="text-base font-semibold text-foreground"
+                  class="truncate text-base font-semibold text-foreground"
                 >
                   {item.label}
                 </Breadcrumb.Page>
@@ -84,10 +88,11 @@
           {/each}
         </Breadcrumb.List>
       </Breadcrumb.Root>
-      <p class="text-xs text-muted-foreground mt-1">
+      <p class="mt-1 min-w-0 truncate text-xs text-muted-foreground">
         Gestiona tu negocio en tiempo real
       </p>
     </div>
+    <BranchSelector />
   </div>
   <div class="ml-auto flex items-center gap-2 md:gap-3">
     <Button
@@ -104,14 +109,15 @@
         <Maximize class="h-5 w-5" />
       {/if}
     </Button>
+    <SyncIndicator />
 
     <button
       type="button"
       onclick={() => (commandMenuAbierto = true)}
-      class="relative hidden md:flex w-72 lg:w-96 items-center rounded-md bg-muted/50 h-9 px-2.5 text-sm text-muted-foreground hover:bg-muted transition-colors"
+      class="relative hidden h-9 w-64 min-w-0 items-center rounded-md bg-muted/50 px-2.5 text-sm text-muted-foreground transition-colors hover:bg-muted lg:flex xl:w-80"
     >
       <Search class="h-4 w-4 shrink-0" />
-      <span class="ml-2">Buscar productos, pedidos, clientes...</span>
+      <span class="ml-2 truncate">Buscar productos, pedidos, clientes...</span>
       <kbd
         class="pointer-events-none ml-auto hidden h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground sm:flex"
       >
@@ -181,6 +187,8 @@
     </DropdownMenu.Root>
 
     <UserNav />
+
+    <ThemeToggle />
   </div>
 </header>
 

@@ -6,14 +6,13 @@ import { createRawSnippet } from "svelte";
 import { Checkbox } from "$lib/components/ui/checkbox/index.js";
 import DataTableActions from "./data-table-actions.svelte";
 import ColumnHeader from "./column-header.svelte";
+import ProductCell from "./product-cell.svelte";
+import StockCell from "./stock-cell.svelte";
+import type { Producto } from "$lib/types/producto";
 
-export type Producto = {
-  id: number;
-  name: string;
-  price: number;
-  stock: number;
-  category: string;
-};
+// El tipo Producto vive en $lib/types (fuente única). Se re-exporta
+// para conservar `import { type Producto } from "./table/columns"`.
+export type { Producto };
 
 // 👇 CAMBIO: ahora es una función que recibe el callback de eliminar
 export function createColumns(
@@ -46,8 +45,27 @@ export function createColumns(
     {
       accessorKey: "name",
       header: ({ column }) =>
-        renderComponent(ColumnHeader, { column, title: "Nombre" }),
+        renderComponent(ColumnHeader, { column, title: "Producto" }),
       enableColumnFilter: true,
+      // Busca por nombre, SKU o código de barras
+      filterFn: (row, _columnId, filterValue: string) => {
+        const q = String(filterValue ?? "")
+          .trim()
+          .toLowerCase();
+        if (!q) return true;
+        const p = row.original;
+        return (
+          p.name.toLowerCase().includes(q) ||
+          (p.sku ?? "").toLowerCase().includes(q) ||
+          (p.codigoBarras ?? "").toLowerCase().includes(q)
+        );
+      },
+      cell: ({ row }) =>
+        renderComponent(ProductCell, {
+          nombre: row.original.name,
+          sku: row.original.sku,
+          imagen: row.original.imagenes?.[0],
+        }),
     },
     {
       accessorKey: "category",
@@ -88,6 +106,11 @@ export function createColumns(
         const valor = row.getValue(columnId) as number;
         return valor >= filterValue;
       },
+      cell: ({ row }) =>
+        renderComponent(StockCell, {
+          stock: row.original.stock,
+          minStock: row.original.minStock,
+        }),
     },
     {
       id: "actions",
