@@ -20,10 +20,8 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
   const form = await superValidate(
     {
       ...producto,
-      // Fallbacks para los campos que Fake Store no tiene (evita que el form
-      // se abra inválido por volumen / tipoEnvase / costPrice obligatorios):
-      volumen: producto.volumen ?? 1,
-      tipoEnvase: producto.tipoEnvase ?? "pet",
+      // Fallback del costo: el mock / la API externa puede no traerlo
+      // y el schema lo exige como número no negativo.
       costPrice: producto.costPrice ?? 0,
     },
     zod4(productoSchema),

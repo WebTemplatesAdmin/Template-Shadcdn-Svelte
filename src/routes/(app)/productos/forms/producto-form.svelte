@@ -11,6 +11,7 @@
   import Plus from "@lucide/svelte/icons/plus";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import { productoSchema, type ProductoSchema } from "../schemas/schema";
+  import { CATEGORIAS } from "$lib/config/categorias";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import { Toaster, toast } from "svelte-sonner";
   import type { SuperValidated, Infer } from "sveltekit-superforms";
@@ -55,6 +56,9 @@
   // svelte-ignore state_referenced_locally: falso positivo conocido de Superforms
   const form = superForm(formProp, {
     validators: zod4Client(productoSchema),
+    // Requerido para datos anidados: `presentaciones` y `atributos`
+    // son arrays de objetos. Interactúa con use:enhance del <form>.
+    dataType: "json",
   });
 
   const { form: formData, enhance, submitting } = form;
@@ -64,17 +68,9 @@
   let indicePresentacionActual = $state<number | null>(null);
   const MAX_MB = 2;
 
-  let categorias = $state([
-    "gaseosa",
-    "agua",
-    "cerveza",
-    "jugo",
-    "energizante",
-    "otro",
-  ]);
+  let categorias = $state<string[]>([...CATEGORIAS]);
   let dialogNuevaCategoriaAbierto = $state(false);
   let nuevaCategoriaNombre = $state("");
-  const envases = ["vidrio", "pet", "lata", "tetrapak"];
 
   // ============ KPIs derivados del producto (solo lectura) ============
   const margen = $derived(calcularMargen($formData.costPrice, $formData.price));
@@ -92,6 +88,14 @@
     $formData.presentaciones = $formData.presentaciones.filter(
       (_, i) => i !== index,
     );
+  }
+
+  function agregarAtributo() {
+    $formData.atributos = [...$formData.atributos, { nombre: "", valor: "" }];
+  }
+
+  function eliminarAtributo(index: number) {
+    $formData.atributos = $formData.atributos.filter((_, i) => i !== index);
   }
 
   function crearCategoria() {
@@ -363,100 +367,82 @@
           </div>
         </div>
 
-        <!-- Bebida -->
+        <!-- Especificaciones (atributos genéricos, adaptables a cualquier rubro) -->
         <div class="rounded-lg border bg-card p-6">
-          <h2 class="mb-4 text-sm font-medium text-muted-foreground">
-            Detalles de la bebida
-          </h2>
-          <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <InputFieldV2
-                {form}
-                name="volumen"
-                label="Volumen"
-                type="number"
-                placeholder="350"
-                bind:value={$formData.volumen}
-              />
-
-              <Form.Field {form} name="unidadVolumen">
-                <Form.Control>
-                  {#snippet children({ props })}
-                    <Form.Label>Unidad</Form.Label>
-                    <Select.Root
-                      type="single"
-                      bind:value={$formData.unidadVolumen}
-                      name={props.name}
-                    >
-                      <Select.Trigger {...props} class="w-full"
-                        >{$formData.unidadVolumen}</Select.Trigger
-                      >
-                      <Select.Content>
-                        <Select.Item value="ml">ml</Select.Item>
-                        <Select.Item value="l">Litros</Select.Item>
-                      </Select.Content>
-                    </Select.Root>
-                  {/snippet}
-                </Form.Control>
-                <Form.FieldErrors />
-              </Form.Field>
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-medium text-muted-foreground">
+                Especificaciones
+              </h2>
+              <p class="text-xs text-muted-foreground">
+                Agrega las que necesites: talla, color, peso, volumen, envase…
+              </p>
             </div>
-
-            <Form.Field {form} name="tipoEnvase">
-              <Form.Control>
-                {#snippet children({ props })}
-                  <Form.Label>Tipo de envase</Form.Label>
-                  <Select.Root
-                    type="single"
-                    bind:value={$formData.tipoEnvase}
-                    name={props.name}
-                  >
-                    <Select.Trigger {...props} class="w-full capitalize">
-                      {$formData.tipoEnvase || "Selecciona el envase"}
-                    </Select.Trigger>
-                    <Select.Content>
-                      {#each envases as e}
-                        <Select.Item value={e} class="capitalize"
-                          >{e}</Select.Item
-                        >
-                      {/each}
-                    </Select.Content>
-                  </Select.Root>
-                {/snippet}
-              </Form.Control>
-              <Form.FieldErrors />
-            </Form.Field>
-
-            <div class="grid grid-cols-2 gap-4">
-              <InputFieldV2
-                {form}
-                name="gradosAlcohol"
-                label="Grados de alcohol (%)"
-                type="number"
-                step="0.1"
-                placeholder="0"
-                bind:value={$formData.gradosAlcohol}
-              />
-              <InputFieldV2
-                {form}
-                name="diasVidaUtil"
-                label="Días de vida útil"
-                type="number"
-                placeholder="180"
-                bind:value={$formData.diasVidaUtil}
-              />
-            </div>
-
-            <div
-              class="flex items-center justify-between rounded-md border p-3"
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onclick={agregarAtributo}
             >
-              <div>
-                <p class="text-sm font-medium">Retornable</p>
-                <p class="text-xs text-muted-foreground">
-                  El envase se devuelve y cobra depósito
+              <Plus class="mr-2 h-4 w-4" />
+              Agregar
+            </Button>
+          </div>
+
+          <div class="space-y-4">
+            <InputFieldV2
+              {form}
+              name="diasVidaUtil"
+              label="Vida útil (días)"
+              type="number"
+              placeholder="180"
+              bind:value={$formData.diasVidaUtil}
+            />
+
+            <div class="space-y-3">
+              {#each $formData.atributos as _, i}
+                <div class="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
+                  <div class="space-y-1">
+                    <label
+                      class="text-xs text-muted-foreground"
+                      for={`attr-nombre-${i}`}>Nombre</label
+                    >
+                    <input
+                      id={`attr-nombre-${i}`}
+                      bind:value={$formData.atributos[i].nombre}
+                      placeholder="Volumen"
+                      class="h-9 w-full rounded-md border px-2.5 text-sm"
+                    />
+                  </div>
+                  <div class="space-y-1">
+                    <label
+                      class="text-xs text-muted-foreground"
+                      for={`attr-valor-${i}`}>Valor</label
+                    >
+                    <input
+                      id={`attr-valor-${i}`}
+                      bind:value={$formData.atributos[i].valor}
+                      placeholder="350 ml"
+                      class="h-9 w-full rounded-md border px-2.5 text-sm"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Eliminar especificación ${i + 1}`}
+                    onclick={() => eliminarAtributo(i)}
+                  >
+                    <Trash2 class="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              {/each}
+
+              {#if $formData.atributos.length === 0}
+                <p class="py-6 text-center text-sm text-muted-foreground">
+                  Sin especificaciones. Agrega las que necesites.
                 </p>
-              </div>
-              <Switch bind:checked={$formData.retornable} />
+              {/if}
             </div>
           </div>
         </div>
