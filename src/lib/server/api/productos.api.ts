@@ -42,7 +42,7 @@ const MOCK_PRODUCTOS: Producto[] = [
     brand: "Coca-Cola",
     price: 3500,
     costPrice: 2200,
-    stock: 480,
+    stock: 600,
     minStock: 40,
     category: "gaseosa",
     sku: "COCA-350",
@@ -52,9 +52,26 @@ const MOCK_PRODUCTOS: Producto[] = [
     status: "activo",
     featured: true,
     atributos: [
-      { nombre: "Volumen", valor: "350 ml" },
       { nombre: "Envase", valor: "Lata" },
       { nombre: "Sabor", valor: "Original" },
+    ],
+    // Producto con variantes: la presentación define stock/precio propios.
+    opciones: [{ nombre: "Presentación", valores: ["350 ml", "1.5 L"] }],
+    variantes: [
+      {
+        sku: "COCA-350",
+        opciones: { Presentación: "350 ml" },
+        price: 3500,
+        costPrice: 2200,
+        stock: 480,
+      },
+      {
+        sku: "COCA-1500",
+        opciones: { Presentación: "1.5 L" },
+        price: 6500,
+        costPrice: 4200,
+        stock: 120,
+      },
     ],
     // 3 imágenes para probar la galería con varias
     imagenes: [
@@ -258,8 +275,10 @@ function mapFakeStoreProduct(raw: FakeStoreProduct): Producto {
     // con el "count" del rating para tener datos variados.
     stock: raw.rating.count,
     minStock: 20,
-    // La API externa no trae especificaciones variables.
+    // La API externa no trae especificaciones ni variantes.
     atributos: [],
+    opciones: [],
+    variantes: [],
   };
 }
 

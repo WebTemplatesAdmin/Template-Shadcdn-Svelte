@@ -18,6 +18,20 @@ const atributoSchema = z.object({
   valor: z.string().min(1, "El valor es requerido").max(120),
 });
 
+const opcionSchema = z.object({
+  nombre: z.string().min(1, "El nombre de la opción es requerido").max(30),
+  valores: z.array(z.string().min(1)).default([]),
+});
+
+const varianteSchema = z.object({
+  sku: z.string().min(1, "El SKU es requerido").max(50),
+  opciones: z.record(z.string(), z.string()),
+  price: z.coerce.number().positive("El precio debe ser mayor a 0"),
+  costPrice: z.coerce.number().nonnegative().optional(),
+  stock: z.coerce.number().int().nonnegative("El stock no puede ser negativo"),
+  codigoBarras: z.string().max(50).optional(),
+});
+
 export const productoSchema = z.object({
   // ============ General ============
   name: z.string().min(1, "El nombre es requerido").max(150),
@@ -31,6 +45,10 @@ export const productoSchema = z.object({
   // ============ Especificaciones / atributos (genérico) ============
   diasVidaUtil: z.coerce.number().int().positive().optional(),
   atributos: z.array(atributoSchema).default([]),
+
+  // ============ Variantes (opciones con stock/precio propios) ============
+  opciones: z.array(opcionSchema).default([]),
+  variantes: z.array(varianteSchema).default([]),
 
   // ============ Precio de la unidad individual ============
   costPrice: z.coerce.number().nonnegative("El costo no puede ser negativo"),
@@ -57,3 +75,5 @@ export const productoSchema = z.object({
 export type ProductoSchema = typeof productoSchema;
 export type Presentacion = z.infer<typeof presentacionSchema>;
 export type Atributo = z.infer<typeof atributoSchema>;
+export type Opcion = z.infer<typeof opcionSchema>;
+export type Variante = z.infer<typeof varianteSchema>;

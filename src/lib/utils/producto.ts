@@ -5,58 +5,89 @@ import TrendingDown from "@lucide/svelte/icons/trending-down";
 import PackagePlus from "@lucide/svelte/icons/package-plus";
 import ShoppingCart from "@lucide/svelte/icons/shopping-cart";
 import Sparkles from "@lucide/svelte/icons/sparkles";
-import type { EventoProducto } from "$lib/types/producto";
+import type { EventoProducto, Producto } from "$lib/types/producto";
 
 /** Margen bruto sobre el costo, en % (con 1 decimal). */
 export function calcularMargen(costo: number, venta: number): string {
-    if (!costo || !venta || costo === 0) return "0";
-    return (((venta - costo) / costo) * 100).toFixed(1);
+  if (!costo || !venta || costo === 0) return "0";
+  return (((venta - costo) / costo) * 100).toFixed(1);
 }
 
 /** true si se vende por debajo del costo. */
 export function esMargenNegativo(costo: number, venta: number): boolean {
-    return costo > 0 && venta > 0 && venta < costo;
+  return costo > 0 && venta > 0 && venta < costo;
 }
 
 /** Valor total del inventario (stock × costo). */
 export function calcularValorInventario(stock: number, costo: number): number {
-    return stock > 0 && costo > 0 ? stock * costo : 0;
+  return stock > 0 && costo > 0 ? stock * costo : 0;
 }
 
 /** Precio con IVA aplicado según la tasa (%). */
 export function calcularPrecioConIva(
-    precio: number,
-    taxRate: string | number,
+  precio: number,
+  taxRate: string | number,
 ): number {
-    return precio > 0 ? precio * (1 + Number(taxRate) / 100) : 0;
+  return precio > 0 ? precio * (1 + Number(taxRate) / 100) : 0;
 }
 
 /** Moneda local (por defecto COP). */
 export function formatearMoneda(valor: number, currency = "COP"): string {
-    return valor.toLocaleString("es-CO", {
-        style: "currency",
-        currency,
-        maximumFractionDigits: 0,
-    });
+  return valor.toLocaleString("es-CO", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  });
 }
 
 /** Fecha corta en es-CO (ej. "05 oct 2026"). */
 export function formatearFecha(iso: string): string {
-    return new Date(iso).toLocaleDateString("es-CO", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    });
+  return new Date(iso).toLocaleDateString("es-CO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+// ============ Variantes ============
+
+/** ¿El producto se vende por variantes (talla/color) en vez de unidad simple? */
+export function tieneVariantes(p: Producto): boolean {
+  return (p.variantes?.length ?? 0) > 0;
+}
+
+/** Precio mínimo (rango "desde"); usa el precio base si no hay variantes. */
+export function precioDesde(p: Producto): number {
+  if (!tieneVariantes(p)) return p.price;
+  return Math.min(...p.variantes!.map((v) => v.price));
+}
+
+/** Precio máximo (rango "hasta"); usa el precio base si no hay variantes. */
+export function precioHasta(p: Producto): number {
+  if (!tieneVariantes(p)) return p.price;
+  return Math.max(...p.variantes!.map((v) => v.price));
+}
+
+/** Stock total: suma de variantes si las hay, o el stock base. */
+export function stockTotal(p: Producto): number {
+  if (!tieneVariantes(p)) return p.stock;
+  return p.variantes!.reduce((acc, v) => acc + v.stock, 0);
+}
+
+/** Etiqueta legible de una variante (ej. "Talla M · Negro"). */
+export function etiquetaVariante(
+  opciones: Record<string, string>,
+): string {
+  return Object.entries(opciones)
+    .map(([nombre, valor]) => `${nombre} ${valor}`)
+    .join(" · ");
 }
 
 /** Icono (lucide) por tipo de evento del producto. */
-export const ICONO_EVENTO: Record<
-    EventoProducto["tipo"],
-    typeof Tag
-> = {
-    promocion: Tag,
-    precio: TrendingDown,
-    stock: PackagePlus,
-    venta: ShoppingCart,
-    creacion: Sparkles,
+export const ICONO_EVENTO: Record<EventoProducto["tipo"], typeof Tag> = {
+  promocion: Tag,
+  precio: TrendingDown,
+  stock: PackagePlus,
+  venta: ShoppingCart,
+  creacion: Sparkles,
 };
