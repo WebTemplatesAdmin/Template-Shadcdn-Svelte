@@ -74,12 +74,12 @@ export function stockTotal(p: Producto): number {
   return p.variantes!.reduce((acc, v) => acc + v.stock, 0);
 }
 
-/** Etiqueta legible de una variante (ej. "Talla M · Negro"). */
+/** Etiqueta legible de una variante (ej. "Talla: M · Color: Negro"). */
 export function etiquetaVariante(
   opciones: Record<string, string>,
 ): string {
   return Object.entries(opciones)
-    .map(([nombre, valor]) => `${nombre} ${valor}`)
+    .map(([nombre, valor]) => `${nombre}: ${valor}`)
     .join(" · ");
 }
 

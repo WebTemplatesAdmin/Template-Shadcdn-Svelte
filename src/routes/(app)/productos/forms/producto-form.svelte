@@ -13,8 +13,12 @@
   import { productoSchema, type ProductoSchema } from "../schemas/schema";
   import { CATEGORIAS } from "$lib/config/categorias";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { toast } from "svelte-sonner";
-  import { notificarExito } from "$lib/utils/notify";
+  import {
+    notificarExito,
+    notificarError,
+    notificarAviso,
+    notificarInfo,
+  } from "$lib/utils/notify";
   import type { SuperValidated, Infer } from "sveltekit-superforms";
   import ImageIcon from "@lucide/svelte/icons/image";
   import X from "@lucide/svelte/icons/x";
@@ -148,21 +152,55 @@
   }
 
   function generarVariantes() {
-    const ops = $formData.opciones.filter(
-      (o) => o.nombre && o.valores.length > 0,
-    );
-    if (ops.length === 0) {
-      toast.error("Define al menos una opción con valores");
+    // Se ignoran las filas vacías y se FUSIONAN las que repiten nombre: así
+    // funciona tanto "Talla: S, M" como dos filas "Talla" con "S" y "M".
+    const fusionadas: { nombre: string; valores: string[] }[] = [];
+    let huboFusion = false;
+    for (const op of $formData.opciones) {
+      const nombre = op.nombre.trim();
+      const valores = [
+        ...new Set(op.valores.map((v) => v.trim()).filter(Boolean)),
+      ];
+      if (!nombre || valores.length === 0) continue;
+
+      const existente = fusionadas.find(
+        (f) => f.nombre.toLowerCase() === nombre.toLowerCase(),
+      );
+      if (existente) {
+        existente.valores = [...new Set([...existente.valores, ...valores])];
+        huboFusion = true;
+      } else {
+        fusionadas.push({ nombre, valores });
+      }
+    }
+
+    if (fusionadas.length === 0) {
+      notificarAviso(
+        "Define al menos una opción",
+        "Cada opción necesita un nombre y valores (ej. Talla → S, M).",
+      );
       return;
     }
+
+    // Refleja la fusión en el formulario (una fila por opción)
+    $formData.opciones = fusionadas;
+
+    if (huboFusion) {
+      notificarInfo(
+        "Opciones fusionadas",
+        "Había opciones con el mismo nombre; se unieron sus valores.",
+      );
+    }
+
     // Producto cartesiano de las opciones
-    const combinaciones = ops.reduce<Record<string, string>[]>(
+    const combinaciones = fusionadas.reduce<Record<string, string>[]>(
       (acc, op) =>
         acc.flatMap((combo) =>
           op.valores.map((valor) => ({ ...combo, [op.nombre]: valor })),
         ),
       [{}],
     );
+
     // Conserva los datos ya cargados de las combinaciones existentes
     const existentes = new Map(
       $formData.variantes.map((v) => [claveOpciones(v.opciones), v]),
@@ -205,11 +243,17 @@
 
     for (const archivo of archivos) {
       if (!archivo.type.startsWith("image/")) {
-        toast.error(`"${archivo.name}" no es una imagen`);
+        notificarError(
+          "Archivo no válido",
+          `"${archivo.name}" no es una imagen.`,
+        );
         continue;
       }
       if (archivo.size > MAX_MB * 1024 * 1024) {
-        toast.error(`"${archivo.name}" supera los ${MAX_MB} MB`);
+        notificarError(
+          "Archivo demasiado grande",
+          `"${archivo.name}" supera los ${MAX_MB} MB.`,
+        );
         continue;
       }
       const dataUrl = await leerComoDataUrl(archivo);
@@ -261,12 +305,18 @@
       return;
     }
     if (!archivo.type.startsWith("image/")) {
-      toast.error(`" ${archivo.name} " no es una imagen`);
+      notificarError(
+        "Archivo no válido",
+        `" ${archivo.name} " no es una imagen.`,
+      );
       input.value = "";
       return;
     }
     if (archivo.size > MAX_MB * 1024 * 1024) {
-      toast.error(`" ${archivo.name} " supera los ${MAX_MB} MB`);
+      notificarError(
+        "Archivo demasiado grande",
+        `" ${archivo.name} " supera los ${MAX_MB} MB.`,
+      );
       input.value = "";
       return;
     }
@@ -833,8 +883,8 @@
 
           {#if $formData.opciones.length === 0}
             <p class="py-6 text-center text-sm text-muted-foreground">
-              Sin opciones. Agrega una (ej. Talla) con sus valores (S, M, L) y
-              pulsa "Generar".
+              Sin opciones. Agrega una fila por opción (ej. Talla) con sus
+              valores separados por coma (S, M, L) y pulsa "Generar".
             </p>
           {:else}
             <div class="space-y-3">
@@ -882,7 +932,10 @@
           {/if}
 
           {#if $formData.variantes.length > 0}
-            <div class="mt-4 overflow-x-auto rounded-md border">
+            <p class="mt-4 text-xs text-muted-foreground">
+              Cada fila es una combinación única; define su SKU, precio y stock.
+            </p>
+            <div class="mt-2 overflow-x-auto rounded-md border">
               <table class="w-full text-sm">
                 <thead class="bg-muted/50 text-muted-foreground">
                   <tr>

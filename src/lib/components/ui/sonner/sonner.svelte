@@ -12,7 +12,9 @@
   (notification-card.svelte) vía toast.custom.
 -->
 <Sonner
-  position="bottom-right"
+  position="top-right"
+  offset={{ top: "5rem", right: "5rem" }}
+  mobileOffset={{ top: "4.5rem", right: "1rem" }}
   closeButton
   class={cn("toaster group", className)}
   toastOptions={{
