@@ -13,7 +13,8 @@
   import { productoSchema, type ProductoSchema } from "../schemas/schema";
   import { CATEGORIAS } from "$lib/config/categorias";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { Toaster, toast } from "svelte-sonner";
+  import { toast } from "svelte-sonner";
+  import { notificarExito } from "$lib/utils/notify";
   import type { SuperValidated, Infer } from "sveltekit-superforms";
   import ImageIcon from "@lucide/svelte/icons/image";
   import X from "@lucide/svelte/icons/x";
@@ -187,7 +188,10 @@
     $formData.category = valor;
     nuevaCategoriaNombre = "";
     dialogNuevaCategoriaAbierto = false;
-    toast.success("Categoría creada con éxito");
+    notificarExito(
+      "Categoría creada",
+      `La categoría "${valor}" se creó correctamente.`,
+    );
     // TODO: llamar a tu products-ms para guardar la categoría permanentemente
   }
 
@@ -1210,12 +1214,3 @@
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
-
-<Toaster
-  richColors
-  style="
-    --success-bg: #1a7f1a; 
-    --success-text: #fff; 
-    --success-border: #1a7f1a;
-  "
-/>

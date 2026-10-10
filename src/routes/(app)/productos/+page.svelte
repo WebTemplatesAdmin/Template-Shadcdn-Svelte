@@ -13,8 +13,8 @@
   import MoreVertical from "@lucide/svelte/icons/more-vertical";
   import ProductRail from "./product-rail.svelte";
   import * as Sheet from "$lib/components/ui/sheet/index.js";
-  import ConfirmDialog from "$lib/components/confirmDialog/ConfirmDialog.svelte";
-  import { toast, Toaster } from "svelte-sonner";
+  import { ConfirmDialog } from "$lib/components/ui/confirm-dialog/index.js";
+  import { notificarExito } from "$lib/utils/notify";
   import DataTableSkeleton from "$lib/components/data-table/data-table-skeleton.svelte";
   import { CATEGORIAS } from "$lib/config/categorias";
 
@@ -100,7 +100,10 @@
       "Eliminando:",
       seleccionados.map((p) => p.id),
     );
-    toast.success("Eliminados");
+    notificarExito(
+      "Productos eliminados",
+      "Los productos seleccionados se eliminaron correctamente.",
+    );
 
     confirmEliminarAbierto = false;
   }
@@ -109,7 +112,10 @@
   function eliminarProductoIndividual(id: number) {
     // TODO: llamar a tu products-ms para eliminar por id
     console.log("Eliminando producto individual:", id);
-    toast.success("Producto eliminado");
+    notificarExito(
+      "Producto eliminado",
+      "El producto se eliminó correctamente.",
+    );
   }
 
   // 👇 NUEVO: se generan las columnas pasándole la función de arriba
@@ -429,13 +435,4 @@
   description="Esta acción no se puede deshacer. Los productos se eliminarán permanentemente."
   confirmText="Eliminar"
   onConfirm={confirmarEliminacion}
-/>
-
-<Toaster
-  richColors
-  style="
-    --success-bg: #1a7f1a; 
-    --success-text: #fff; 
-    --success-border: #1a7f1a;
-  "
 />
