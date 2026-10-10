@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ cookies, url }) => {
 
   const sesion = cookies.get("sesion");
   if (sesion) {
-    redirect(307, url.searchParams.get("redirectTo") || "/dashboard");
+    redirect(303, url.searchParams.get("redirectTo") || "/dashboard");
   }
 
   const form = await superValidate(zod4(loginSchema));
