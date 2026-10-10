@@ -281,7 +281,7 @@
   <title>{titulo} · Mis Ventas</title>
 </svelte:head>
 
-<div class="mx-auto max-w-5xl pb-24">
+<div class="animate-fade-up mx-auto max-w-5xl pb-24">
   <a
     href="/productos"
     class="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mt-5"
