@@ -14,7 +14,7 @@
   import ProductRail from "./product-rail.svelte";
   import * as Sheet from "$lib/components/ui/sheet/index.js";
   import { ConfirmDialog } from "$lib/components/ui/confirm-dialog/index.js";
-  import { notificarExito } from "$lib/utils/notify";
+  import { notificarExito, notificarAviso } from "$lib/utils/notify";
   import DataTableSkeleton from "$lib/components/data-table/data-table-skeleton.svelte";
   import { CATEGORIAS } from "$lib/config/categorias";
 
@@ -25,7 +25,10 @@
       .getFilteredSelectedRowModel()
       .rows.map((r: any) => r.original) as Producto[];
     if (seleccionados.length === 0) {
-      alert("Selecciona al menos un producto");
+      notificarAviso(
+        "No hay productos seleccionados",
+        "Marca la casilla de al menos un producto de la lista para poder exportarlo.",
+      );
       return;
     }
     const csv =
@@ -38,24 +41,6 @@
     a.download = "productos.csv";
     a.click();
     URL.revokeObjectURL(url);
-  }
-
-  function eliminarSeleccionados(table: any) {
-    const seleccionados = table
-      .getFilteredSelectedRowModel()
-      .rows.map((r: any) => r.original) as Producto[];
-    if (seleccionados.length === 0) return;
-
-    const confirmar = confirm(
-      `¿Eliminar ${seleccionados.length} producto(s)? Esta acción no se puede deshacer.`,
-    );
-    if (!confirmar) return;
-
-    // TODO: llamar a tu products-ms para eliminar cada uno por su id
-    console.log(
-      "Eliminando:",
-      seleccionados.map((p) => p.id),
-    );
   }
 
   // Categorías desde la fuente única ($lib/config/categorias.ts)
@@ -262,7 +247,7 @@
                   {#if table.getFilteredSelectedRowModel().rows.length > 0}
                     <DropdownMenu.Item
                       variant="destructive"
-                      onclick={() => eliminarSeleccionados(table)}
+                      onclick={() => pedirConfirmacionEliminar(table)}
                     >
                       Eliminar ({table.getFilteredSelectedRowModel().rows
                         .length})

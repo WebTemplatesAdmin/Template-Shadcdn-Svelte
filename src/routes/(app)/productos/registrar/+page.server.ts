@@ -18,7 +18,10 @@ export const actions: Actions = {
     }
 
     // TODO: llamar a tu products-ms para crear el producto real
-    console.log("Creando producto:", form.data);
+    const payload = form.data;
+    console.log(
+      `[productos] Payload (CREAR) →\n${JSON.stringify(payload, null, 2)}`,
+    );
 
     redirect(303, "/productos");
   },

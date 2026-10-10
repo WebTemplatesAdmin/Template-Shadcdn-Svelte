@@ -41,7 +41,10 @@ export const actions: Actions = {
     }
 
     // TODO: llamar a actualizarProducto(fetch, Number(params.id), form.data)
-    console.log("Actualizando producto", params.id, form.data);
+    const payload = { id: Number(params.id), ...form.data };
+    console.log(
+      `[productos] Payload (ACTUALIZAR) →\n${JSON.stringify(payload, null, 2)}`,
+    );
 
     redirect(303, "/productos");
   },
