@@ -16,6 +16,7 @@
   import ConfirmDialog from "$lib/components/confirmDialog/ConfirmDialog.svelte";
   import { toast, Toaster } from "svelte-sonner";
   import DataTableSkeleton from "$lib/components/data-table/data-table-skeleton.svelte";
+  import { CATEGORIAS } from "$lib/config/categorias";
 
   let { data } = $props();
 
@@ -57,7 +58,8 @@
     );
   }
 
-  const categorias = ["Ropa", "Calzado", "Accesorios"]; // TODO: sacar dinámicamente de tus productos o de tu products-ms
+  // Categorías desde la fuente única ($lib/config/categorias.ts)
+  const categorias = [...CATEGORIAS];
 
   let precioMin = $state("");
   let precioMax = $state("");

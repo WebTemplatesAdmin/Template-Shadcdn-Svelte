@@ -19,6 +19,12 @@ export type PresentacionProducto = {
   imagen?: string;
 };
 
+// Especificaciones variables por rubro (talla, color, peso, volumen, envase…).
+export type AtributoProducto = {
+  nombre: string;
+  valor: string;
+};
+
 export type Producto = {
   id: number;
   name: string;
@@ -36,17 +42,13 @@ export type Producto = {
   supplierId?: string;
   sku?: string;
   codigoBarras?: string;
-  volumen?: number;
-  unidadVolumen?: "ml" | "l";
-  tipoEnvase?: "vidrio" | "pet" | "lata" | "tetrapak";
-  retornable?: boolean;
-  gradosAlcohol?: number;
   diasVidaUtil?: number;
   costPrice?: number;
   currency?: "COP" | "USD" | "MXN";
   taxRate?: "0" | "5" | "19";
   location?: string;
   presentaciones?: PresentacionProducto[];
+  atributos?: AtributoProducto[];
   status?: "activo" | "inactivo" | "borrador";
   featured?: boolean;
 };

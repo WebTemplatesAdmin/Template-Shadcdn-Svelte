@@ -99,27 +99,20 @@
         </dl>
       </DetailCard>
 
-      <DetailCard title="Detalles de la bebida">
+      <DetailCard title="Especificaciones">
         <dl class="space-y-3">
           <DetailItem
-            label="Volumen"
-            value={p.volumen ? `${p.volumen} ${p.unidadVolumen ?? "ml"}` : null}
-          />
-          <DetailItem label="Tipo de envase" value={p.tipoEnvase} />
-          <DetailItem
-            label="Grados de alcohol"
-            value={p.gradosAlcohol ? `${p.gradosAlcohol}%` : null}
-          />
-          <DetailItem
-            label="Días de vida útil"
+            label="Vida útil"
             value={p.diasVidaUtil ? `${p.diasVidaUtil} días` : null}
           />
-          <DetailItem label="Retornable">
-            <Badge variant={p.retornable ? "default" : "secondary"}>
-              {p.retornable ? "Sí" : "No"}
-            </Badge>
-          </DetailItem>
+          {#each p.atributos ?? [] as attr, i (i)}
+            <DetailItem label={attr.nombre} value={attr.valor} />
+          {/each}
         </dl>
+
+        {#if !p.diasVidaUtil && (p.atributos ?? []).length === 0}
+          <p class="text-sm text-muted-foreground">Sin especificaciones.</p>
+        {/if}
       </DetailCard>
 
       <DetailCard title="Costo e inventario">
