@@ -25,6 +25,22 @@ export type AtributoProducto = {
   valor: string;
 };
 
+// Opción de variación (ej. Talla con valores S, M, L).
+export type OpcionProducto = {
+  nombre: string;
+  valores: string[];
+};
+
+// Combinación vendible con SKU, precio y stock propios (ej. Talla M · Negro).
+export type VarianteProducto = {
+  sku: string;
+  opciones: Record<string, string>;
+  price: number;
+  costPrice?: number;
+  stock: number;
+  codigoBarras?: string;
+};
+
 export type Producto = {
   id: number;
   name: string;
@@ -49,6 +65,8 @@ export type Producto = {
   location?: string;
   presentaciones?: PresentacionProducto[];
   atributos?: AtributoProducto[];
+  opciones?: OpcionProducto[];
+  variantes?: VarianteProducto[];
   status?: "activo" | "inactivo" | "borrador";
   featured?: boolean;
 };

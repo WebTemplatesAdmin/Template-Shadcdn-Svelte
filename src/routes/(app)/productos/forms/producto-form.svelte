@@ -28,6 +28,7 @@
     calcularPrecioConIva,
     formatearMoneda,
     formatearFecha,
+    etiquetaVariante,
     ICONO_EVENTO,
   } from "$lib/utils/producto";
 
@@ -84,6 +85,30 @@
     calcularPrecioConIva($formData.price, $formData.taxRate),
   );
 
+  // ============ Variantes (si existen, el precio y el stock se derivan) ============
+  const hayVariantes = $derived($formData.variantes.length > 0);
+  const precioMin = $derived(
+    $formData.variantes.length
+      ? Math.min(...$formData.variantes.map((v) => v.price))
+      : 0,
+  );
+  const precioMax = $derived(
+    $formData.variantes.length
+      ? Math.max(...$formData.variantes.map((v) => v.price))
+      : 0,
+  );
+  const stockSuma = $derived(
+    $formData.variantes.reduce((acc, v) => acc + v.stock, 0),
+  );
+
+  // Mantiene `price` y `stock` del producto en sincronía con sus variantes.
+  $effect(() => {
+    if (hayVariantes) {
+      $formData.price = precioMin;
+      $formData.stock = stockSuma;
+    }
+  });
+
   function eliminarPresentacion(index: number) {
     $formData.presentaciones = $formData.presentaciones.filter(
       (_, i) => i !== index,
@@ -96,6 +121,61 @@
 
   function eliminarAtributo(index: number) {
     $formData.atributos = $formData.atributos.filter((_, i) => i !== index);
+  }
+
+  // ============ Variantes ============
+  function agregarOpcion() {
+    $formData.opciones = [...$formData.opciones, { nombre: "", valores: [] }];
+  }
+
+  function eliminarOpcion(index: number) {
+    $formData.opciones = $formData.opciones.filter((_, i) => i !== index);
+  }
+
+  function setValoresOpcion(index: number, texto: string) {
+    $formData.opciones[index].valores = texto
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+
+  function claveOpciones(opciones: Record<string, string>): string {
+    return Object.keys(opciones)
+      .sort()
+      .map((k) => `${k}:${opciones[k]}`)
+      .join("|");
+  }
+
+  function generarVariantes() {
+    const ops = $formData.opciones.filter(
+      (o) => o.nombre && o.valores.length > 0,
+    );
+    if (ops.length === 0) {
+      toast.error("Define al menos una opción con valores");
+      return;
+    }
+    // Producto cartesiano de las opciones
+    const combinaciones = ops.reduce<Record<string, string>[]>(
+      (acc, op) =>
+        acc.flatMap((combo) =>
+          op.valores.map((valor) => ({ ...combo, [op.nombre]: valor })),
+        ),
+      [{}],
+    );
+    // Conserva los datos ya cargados de las combinaciones existentes
+    const existentes = new Map(
+      $formData.variantes.map((v) => [claveOpciones(v.opciones), v]),
+    );
+    $formData.variantes = combinaciones.map((opciones) => {
+      const previo = existentes.get(claveOpciones(opciones));
+      return (
+        previo ?? { sku: "", opciones, price: $formData.price || 0, stock: 0 }
+      );
+    });
+  }
+
+  function eliminarVariante(index: number) {
+    $formData.variantes = $formData.variantes.filter((_, i) => i !== index);
   }
 
   function crearCategoria() {
@@ -463,15 +543,31 @@
                 placeholder="2500"
                 bind:value={$formData.costPrice}
               />
-              <InputFieldV2
-                {form}
-                name="price"
-                label="Precio de venta (unidad)"
-                type="number"
-                step="0.01"
-                placeholder="3500"
-                bind:value={$formData.price}
-              />
+              {#if hayVariantes}
+                <div class="space-y-1">
+                  <p class="text-sm font-medium leading-none">
+                    Precio de venta (desde variantes)
+                  </p>
+                  <p
+                    class="flex h-9 items-center rounded-md border bg-muted px-3 text-sm text-muted-foreground"
+                  >
+                    {formatearMoneda(precioMin, $formData.currency)} – {formatearMoneda(
+                      precioMax,
+                      $formData.currency,
+                    )}
+                  </p>
+                </div>
+              {:else}
+                <InputFieldV2
+                  {form}
+                  name="price"
+                  label="Precio de venta (unidad)"
+                  type="number"
+                  step="0.01"
+                  placeholder="3500"
+                  bind:value={$formData.price}
+                />
+              {/if}
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -523,14 +619,27 @@
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-              <InputFieldV2
-                {form}
-                name="stock"
-                label="Stock (unidades individuales)"
-                type="number"
-                placeholder="480"
-                bind:value={$formData.stock}
-              />
+              {#if hayVariantes}
+                <div class="space-y-1">
+                  <p class="text-sm font-medium leading-none">
+                    Stock (suma de variantes)
+                  </p>
+                  <p
+                    class="flex h-9 items-center rounded-md border bg-muted px-3 text-sm text-muted-foreground"
+                  >
+                    {stockSuma.toLocaleString("es-CO")}
+                  </p>
+                </div>
+              {:else}
+                <InputFieldV2
+                  {form}
+                  name="stock"
+                  label="Stock (unidades individuales)"
+                  type="number"
+                  placeholder="480"
+                  bind:value={$formData.stock}
+                />
+              {/if}
               <InputFieldV2
                 {form}
                 name="minStock"
@@ -688,6 +797,147 @@
               </p>
             {/if}
           </div>
+        </div>
+
+        <!-- Variantes (opciones con stock/precio propios) -->
+        <div class="rounded-lg border bg-card p-6">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-medium text-muted-foreground">
+                Variantes
+              </h2>
+              <p class="text-xs text-muted-foreground">
+                Opcional. Úsalo cuando cada combinación (talla, color…) tenga
+                stock y precio propios.
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onclick={agregarOpcion}
+              >
+                <Plus class="mr-2 h-4 w-4" />
+                Opción
+              </Button>
+              <Button type="button" size="sm" onclick={generarVariantes}>
+                Generar
+              </Button>
+            </div>
+          </div>
+
+          {#if $formData.opciones.length === 0}
+            <p class="py-6 text-center text-sm text-muted-foreground">
+              Sin opciones. Agrega una (ej. Talla) con sus valores (S, M, L) y
+              pulsa "Generar".
+            </p>
+          {:else}
+            <div class="space-y-3">
+              {#each $formData.opciones as _, i}
+                <div class="grid grid-cols-[1fr_2fr_auto] items-end gap-3">
+                  <div class="space-y-1">
+                    <label
+                      class="text-xs text-muted-foreground"
+                      for={`op-nombre-${i}`}>Opción</label
+                    >
+                    <input
+                      id={`op-nombre-${i}`}
+                      bind:value={$formData.opciones[i].nombre}
+                      placeholder="Talla"
+                      class="h-9 w-full rounded-md border px-2.5 text-sm"
+                    />
+                  </div>
+                  <div class="space-y-1">
+                    <label
+                      class="text-xs text-muted-foreground"
+                      for={`op-valores-${i}`}
+                      >Valores (separados por coma)</label
+                    >
+                    <input
+                      id={`op-valores-${i}`}
+                      value={$formData.opciones[i].valores.join(", ")}
+                      oninput={(e) =>
+                        setValoresOpcion(i, e.currentTarget.value)}
+                      placeholder="S, M, L"
+                      class="h-9 w-full rounded-md border px-2.5 text-sm"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Eliminar opción ${i + 1}`}
+                    onclick={() => eliminarOpcion(i)}
+                  >
+                    <Trash2 class="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              {/each}
+            </div>
+          {/if}
+
+          {#if $formData.variantes.length > 0}
+            <div class="mt-4 overflow-x-auto rounded-md border">
+              <table class="w-full text-sm">
+                <thead class="bg-muted/50 text-muted-foreground">
+                  <tr>
+                    <th class="px-3 py-2 text-left font-medium">Variante</th>
+                    <th class="px-3 py-2 text-left font-medium">SKU</th>
+                    <th class="px-3 py-2 text-left font-medium">Precio</th>
+                    <th class="px-3 py-2 text-left font-medium">Stock</th>
+                    <th class="px-3 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each $formData.variantes as _, i}
+                    <tr class="border-t">
+                      <td class="px-3 py-2 font-medium">
+                        {etiquetaVariante($formData.variantes[i].opciones) ||
+                          "—"}
+                      </td>
+                      <td class="px-3 py-2">
+                        <input
+                          bind:value={$formData.variantes[i].sku}
+                          placeholder="CAM-M-NEG"
+                          class="h-8 w-full min-w-28 rounded-md border px-2 text-sm"
+                        />
+                      </td>
+                      <td class="px-3 py-2">
+                        <input
+                          type="number"
+                          bind:value={$formData.variantes[i].price}
+                          class="h-8 w-24 rounded-md border px-2 text-sm"
+                        />
+                      </td>
+                      <td class="px-3 py-2">
+                        <input
+                          type="number"
+                          bind:value={$formData.variantes[i].stock}
+                          class="h-8 w-20 rounded-md border px-2 text-sm"
+                        />
+                      </td>
+                      <td class="px-3 py-2 text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Eliminar variante ${i + 1}`}
+                          onclick={() => eliminarVariante(i)}
+                        >
+                          <Trash2 class="h-4 w-4 text-destructive" />
+                        </Button>
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+            <p class="mt-2 text-xs text-muted-foreground">
+              Con variantes, el <strong>precio (desde)</strong> y el
+              <strong>stock</strong> del producto se calculan automáticamente.
+            </p>
+          {/if}
         </div>
       </div>
 

@@ -18,6 +18,11 @@
     calcularPrecioConIva,
     formatearMoneda,
     formatearFecha,
+    precioDesde,
+    precioHasta,
+    stockTotal,
+    tieneVariantes,
+    etiquetaVariante,
     ICONO_EVENTO,
   } from "$lib/utils/producto";
   import type { PageData } from "./$types";
@@ -27,12 +32,16 @@
   const p = $derived(data.producto);
 
   const currency = $derived(p.currency ?? "COP");
-  const margen = $derived(calcularMargen(p.costPrice ?? 0, p.price));
-  const margenNegativo = $derived(esMargenNegativo(p.costPrice ?? 0, p.price));
-  const valorInventario = $derived(
-    calcularValorInventario(p.stock, p.costPrice ?? 0),
+  const margen = $derived(calcularMargen(p.costPrice ?? 0, precioDesde(p)));
+  const margenNegativo = $derived(
+    esMargenNegativo(p.costPrice ?? 0, precioDesde(p)),
   );
-  const precioConIva = $derived(calcularPrecioConIva(p.price, p.taxRate ?? "19"));
+  const valorInventario = $derived(
+    calcularValorInventario(stockTotal(p), p.costPrice ?? 0),
+  );
+  const precioConIva = $derived(
+    calcularPrecioConIva(precioDesde(p), p.taxRate ?? "19"),
+  );
 
   const ESTADO_VARIANTE = {
     activo: "default",
@@ -61,7 +70,10 @@
     <div class="space-y-2">
       <div class="flex flex-wrap items-center gap-2">
         <h1 class="text-2xl font-semibold">{p.name}</h1>
-        <Badge variant={ESTADO_VARIANTE[p.status ?? "activo"]} class="capitalize">
+        <Badge
+          variant={ESTADO_VARIANTE[p.status ?? "activo"]}
+          class="capitalize"
+        >
           {p.status ?? "activo"}
         </Badge>
         {#if p.featured}
@@ -124,14 +136,20 @@
               : null}
           />
           <DetailItem
-            label="Precio de venta (unidad)"
-            value={formatearMoneda(p.price, currency)}
+            label={tieneVariantes(p)
+              ? "Precio de venta"
+              : "Precio de venta (unidad)"}
+            value={tieneVariantes(p)
+              ? `${formatearMoneda(precioDesde(p), currency)} – ${formatearMoneda(precioHasta(p), currency)}`
+              : formatearMoneda(p.price, currency)}
           />
           <DetailItem label="Moneda" value={currency} />
           <DetailItem label="IVA" value={`${p.taxRate ?? "19"}%`} />
           <DetailItem
-            label="Stock (unidades)"
-            value={p.stock.toLocaleString("es-CO")}
+            label={tieneVariantes(p)
+              ? "Stock (suma de variantes)"
+              : "Stock (unidades)"}
+            value={stockTotal(p).toLocaleString("es-CO")}
           />
           <DetailItem label="Stock mínimo" value={p.minStock} />
           <DetailItem label="Ubicación en almacén" value={p.location} />
@@ -188,6 +206,39 @@
           </p>
         {/if}
       </DetailCard>
+
+      {#if tieneVariantes(p)}
+        <DetailCard title="Variantes">
+          <Table.Root>
+            <Table.Header>
+              <Table.Row>
+                <Table.Head>Variante</Table.Head>
+                <Table.Head>SKU</Table.Head>
+                <Table.Head class="text-right">Precio</Table.Head>
+                <Table.Head class="text-right">Stock</Table.Head>
+              </Table.Row>
+            </Table.Header>
+            <Table.Body>
+              {#each p.variantes ?? [] as v, i (i)}
+                <Table.Row>
+                  <Table.Cell class="font-medium">
+                    {etiquetaVariante(v.opciones) || "—"}
+                  </Table.Cell>
+                  <Table.Cell class="font-mono text-xs text-muted-foreground">
+                    {v.sku}
+                  </Table.Cell>
+                  <Table.Cell class="text-right tabular-nums">
+                    {formatearMoneda(v.price, currency)}
+                  </Table.Cell>
+                  <Table.Cell class="text-right tabular-nums">
+                    {v.stock.toLocaleString("es-CO")}
+                  </Table.Cell>
+                </Table.Row>
+              {/each}
+            </Table.Body>
+          </Table.Root>
+        </DetailCard>
+      {/if}
     </div>
 
     <!-- Columna lateral -->
@@ -269,7 +320,9 @@
                         <p class="text-sm font-medium leading-tight">
                           {evento.titulo}
                         </p>
-                        <span class="shrink-0 text-[11px] text-muted-foreground">
+                        <span
+                          class="shrink-0 text-[11px] text-muted-foreground"
+                        >
                           {formatearFecha(evento.fecha)}
                         </span>
                       </div>
