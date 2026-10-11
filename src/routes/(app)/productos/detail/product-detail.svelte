@@ -11,19 +11,18 @@
   import DetailCard from "./detail-card.svelte";
   import DetailItem from "./detail-item.svelte";
   import ProductGallery from "./product-gallery.svelte";
+  import EventoItem from "./evento-item.svelte";
   import {
     calcularMargen,
     esMargenNegativo,
     calcularValorInventario,
     calcularPrecioConIva,
     formatearMoneda,
-    formatearFecha,
     precioDesde,
     precioHasta,
     stockTotal,
     tieneVariantes,
     etiquetaVariante,
-    ICONO_EVENTO,
   } from "$lib/utils/producto";
   import type { EventoProducto, Producto } from "$lib/types/producto";
 
@@ -313,29 +312,7 @@
             {:else}
               <ul class="space-y-4">
                 {#each historial as evento (evento.id)}
-                  {@const Icono = ICONO_EVENTO[evento.tipo]}
-                  <li class="flex gap-3">
-                    <div
-                      class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted"
-                    >
-                      <Icono class="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div class="min-w-0 flex-1 space-y-0.5">
-                      <div class="flex items-start justify-between gap-2">
-                        <p class="text-sm font-medium leading-tight">
-                          {evento.titulo}
-                        </p>
-                        <span
-                          class="shrink-0 text-[11px] text-muted-foreground"
-                        >
-                          {formatearFecha(evento.fecha)}
-                        </span>
-                      </div>
-                      <p class="text-xs text-muted-foreground">
-                        {evento.detalle}
-                      </p>
-                    </div>
-                  </li>
+                  <EventoItem {evento} />
                 {/each}
               </ul>
             {/if}
@@ -344,7 +321,9 @@
               variant="outline"
               size="sm"
               class="mt-4 w-full"
-              href={`/productos/${p.id}/historial`}
+              href={`/productos/${p.id}/historial?volver=${encodeURIComponent(
+                `/productos/${p.id}/ver`,
+              )}`}
             >
               Ver historial completo
               <ArrowRight class="ml-2 h-4 w-4" />

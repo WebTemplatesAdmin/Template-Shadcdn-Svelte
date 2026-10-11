@@ -24,6 +24,7 @@
 
   const table = createTable({
     features,
+    initialState: { pagination: { pageIndex: 0, pageSize: 15 } },
     get data() {
       return data;
     },
@@ -100,7 +101,7 @@
             {table.atoms.pagination.get().pageSize}
           </Select.Trigger>
           <Select.Content>
-            {#each [5, 10, 50, 100] as size}
+            {#each [5, 10, 15, 50, 100] as size}
               <Select.Item value={String(size)}>{size}</Select.Item>
             {/each}
           </Select.Content>

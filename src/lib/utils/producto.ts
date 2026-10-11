@@ -49,6 +49,14 @@ export function formatearFecha(iso: string): string {
   });
 }
 
+/** Hora corta en es-CO (ej. "09:00"). */
+export function formatearHora(iso: string): string {
+  return new Date(iso).toLocaleTimeString("es-CO", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 // ============ Variantes ============
 
 /** ¿El producto se vende por variantes (talla/color) en vez de unidad simple? */
