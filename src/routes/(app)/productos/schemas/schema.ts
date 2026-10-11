@@ -1,6 +1,17 @@
 // src/routes/(app)/productos/registrar/schema.ts
 import { z } from "zod";
 
+/**
+ * Trata una cadena vacía como "sin valor" para que `z.coerce` no la convierta
+ * en 0. Sin esto, un campo numérico vacío pasaría la validación como 0.
+ */
+const numeroRequerido = <T extends z.ZodType>(schema: T) =>
+  z.preprocess(
+    (valor) =>
+      typeof valor === "string" && valor.trim() === "" ? undefined : valor,
+    schema,
+  );
+
 const presentacionSchema = z.object({
   nombre: z.string().min(1, "El nombre es requerido"), // ej: "Six-pack", "Caja x24"
   sku: z.string().min(1, "El SKU es requerido"),
@@ -28,7 +39,12 @@ const varianteSchema = z.object({
   opciones: z.record(z.string(), z.string()),
   price: z.coerce.number().positive("El precio debe ser mayor a 0"),
   costPrice: z.coerce.number().nonnegative().optional(),
-  stock: z.coerce.number().int().nonnegative("El stock no puede ser negativo"),
+  stock: numeroRequerido(
+    z.coerce
+      .number({ error: "El stock es requerido" })
+      .int("El stock debe ser un número entero")
+      .nonnegative("El stock no puede ser negativo"),
+  ),
   codigoBarras: z.string().max(50).optional(),
 });
 
@@ -51,14 +67,29 @@ export const productoSchema = z.object({
   variantes: z.array(varianteSchema).default([]),
 
   // ============ Precio de la unidad individual ============
-  costPrice: z.coerce.number().nonnegative("El costo no puede ser negativo"),
+  costPrice: numeroRequerido(
+    z.coerce
+      .number({ error: "El costo es requerido" })
+      .nonnegative("El costo no puede ser negativo"),
+  ),
   price: z.coerce.number().positive("El precio debe ser mayor a 0"),
   currency: z.enum(["COP", "USD", "MXN"]).default("COP"),
   taxRate: z.enum(["0", "5", "19"]).default("19"),
 
   // ============ Inventario (SIEMPRE en unidad base) ============
-  stock: z.coerce.number().int().nonnegative("El stock no puede ser negativo"),
-  minStock: z.coerce.number().int().nonnegative().default(20),
+  stock: numeroRequerido(
+    z.coerce
+      .number({ error: "El stock es requerido" })
+      .int("El stock debe ser un número entero")
+      .nonnegative("El stock no puede ser negativo"),
+  ),
+  minStock: numeroRequerido(
+    z.coerce
+      .number()
+      .int("El stock mínimo debe ser un número entero")
+      .nonnegative("El stock mínimo no puede ser negativo")
+      .default(20),
+  ),
   location: z.string().max(100).optional(),
 
   // ============ Presentaciones adicionales (paquetes, opcional) ============

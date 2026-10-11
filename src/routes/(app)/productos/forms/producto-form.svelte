@@ -359,7 +359,13 @@
     </div>
   </div>
 
-  <form id="form-producto" method="POST" use:enhance class="space-y-6">
+  <form
+    id="form-producto"
+    method="POST"
+    use:enhance
+    novalidate
+    class="space-y-6"
+  >
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <!-- Columna principal -->
       <div class="space-y-6 lg:col-span-2">
@@ -445,13 +451,14 @@
               name="name"
               label="Nombre del producto"
               placeholder="Coca-Cola"
+              required
               bind:value={$formData.name}
             />
 
             <Form.Field {form} name="description">
               <Form.Control>
                 {#snippet children({ props })}
-                  <Form.Label>Descripción</Form.Label>
+                  <Form.Label>Descripción (opcional)</Form.Label>
                   <Textarea
                     {...props}
                     rows={3}
@@ -466,7 +473,7 @@
             <InputFieldV2
               {form}
               name="brand"
-              label="Marca"
+              label="Marca (opcional)"
               placeholder="Coca-Cola Company"
               bind:value={$formData.brand}
             />
@@ -477,6 +484,7 @@
                 name="sku"
                 label="SKU"
                 placeholder="COCA-350"
+                required
                 readonly={esEdicion}
                 inputClass={esEdicion
                   ? "bg-muted text-muted-foreground cursor-not-allowed"
@@ -487,7 +495,7 @@
               <InputFieldV2
                 {form}
                 name="codigoBarras"
-                label="Código de barras"
+                label="Código de barras (opcional)"
                 placeholder="7701234567890"
                 readonly={esEdicion}
                 inputClass={esEdicion
@@ -525,7 +533,7 @@
             <InputFieldV2
               {form}
               name="diasVidaUtil"
-              label="Vida útil (días)"
+              label="Vida útil en días (opcional)"
               type="number"
               placeholder="180"
               bind:value={$formData.diasVidaUtil}
@@ -593,6 +601,7 @@
                 type="number"
                 step="0.01"
                 placeholder="2500"
+                required
                 bind:value={$formData.costPrice}
               />
               {#if hayVariantes}
@@ -617,6 +626,7 @@
                   type="number"
                   step="0.01"
                   placeholder="3500"
+                  required
                   bind:value={$formData.price}
                 />
               {/if}
@@ -689,6 +699,7 @@
                   label="Stock (unidades individuales)"
                   type="number"
                   placeholder="480"
+                  required
                   bind:value={$formData.stock}
                 />
               {/if}
@@ -705,7 +716,7 @@
             <InputFieldV2
               {form}
               name="location"
-              label="Ubicación en almacén"
+              label="Ubicación en almacén (opcional)"
               placeholder="Pasillo 4, Estante B"
               bind:value={$formData.location}
             />
@@ -1063,13 +1074,20 @@
               <Form.Field {form} name="category">
                 <Form.Control>
                   {#snippet children({ props })}
-                    <Form.Label>Categoría</Form.Label>
+                    <Form.Label>
+                      Categoría
+                      <span class="ml-0.5 text-destructive">*</span>
+                    </Form.Label>
                     <Select.Root
                       type="single"
                       bind:value={$formData.category}
                       name={props.name}
                     >
-                      <Select.Trigger {...props} class="w-full capitalize">
+                      <Select.Trigger
+                        {...props}
+                        class="w-full capitalize"
+                        aria-required="true"
+                      >
                         {$formData.category || "Selecciona una categoría"}
                       </Select.Trigger>
                       <Select.Content>
