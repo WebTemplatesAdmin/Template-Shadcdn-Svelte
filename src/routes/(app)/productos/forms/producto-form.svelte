@@ -12,6 +12,7 @@
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import { productoSchema, type ProductoSchema } from "../schemas/schema";
   import { CATEGORIAS } from "$lib/config/categorias";
+  import EventoItem from "../detail/evento-item.svelte";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
   import {
     notificarExito,
@@ -22,7 +23,6 @@
   import type { SuperValidated, Infer } from "sveltekit-superforms";
   import ImageIcon from "@lucide/svelte/icons/image";
   import X from "@lucide/svelte/icons/x";
-  import ArrowRight from "@lucide/svelte/icons/arrow-right";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
   import Gauge from "@lucide/svelte/icons/gauge";
   import type { EventoProducto } from "$lib/types/producto";
@@ -32,9 +32,7 @@
     calcularValorInventario,
     calcularPrecioConIva,
     formatearMoneda,
-    formatearFecha,
     etiquetaVariante,
-    ICONO_EVENTO,
   } from "$lib/utils/producto";
 
   let {
@@ -1146,41 +1144,7 @@
               {:else}
                 <ul class="space-y-4">
                   {#each historial as evento (evento.id)}
-                    <li class="flex gap-3">
-                      <div
-                        class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted"
-                      >
-                        <!-- svelte-ignore svelte_component_deprecated -->
-                        <svelte:component
-                          this={ICONO_EVENTO[evento.tipo]}
-                          class="h-4 w-4 text-muted-foreground"
-                        />
-                      </div>
-                      <div class="min-w-0 flex-1 space-y-0.5">
-                        <div class="flex items-start justify-between gap-2">
-                          <p class="text-sm font-medium leading-tight">
-                            {evento.titulo}
-                          </p>
-                          <span
-                            class="shrink-0 text-[11px] text-muted-foreground"
-                          >
-                            {formatearFecha(evento.fecha)}
-                          </span>
-                        </div>
-                        <p class="text-xs text-muted-foreground">
-                          {evento.detalle}
-                        </p>
-                        {#if evento.enlace}
-                          <a
-                            href={evento.enlace}
-                            class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                          >
-                            Ver detalle
-                            <ArrowRight class="h-3 w-3" />
-                          </a>
-                        {/if}
-                      </div>
-                    </li>
+                    <EventoItem {evento} />
                   {/each}
                 </ul>
               {/if}

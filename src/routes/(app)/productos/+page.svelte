@@ -114,7 +114,7 @@
 <div class="pr-16">
   <div class="min-w-0 flex-1">
     {#await data.productos}
-      <DataTableSkeleton columnas={6} filas={10} />
+      <DataTableSkeleton columnas={6} filas={15} />
     {:then productos}
       <DataTable data={productos} {columns}>
         {#snippet toolbar({ table })}
@@ -208,7 +208,7 @@
                         {table.atoms.pagination.get().pageSize}
                       </Select.Trigger>
                       <Select.Content>
-                        {#each [5, 10, 50, 100] as size}
+                        {#each [5, 10, 15, 50, 100] as size}
                           <Select.Item value={String(size)}>{size}</Select.Item>
                         {/each}
                       </Select.Content>
@@ -353,7 +353,7 @@
                   {table.atoms.pagination.get().pageSize}
                 </Select.Trigger>
                 <Select.Content>
-                  {#each [5, 10, 50, 100] as size}
+                  {#each [5, 10, 15, 50, 100] as size}
                     <Select.Item value={String(size)}>{size}</Select.Item>
                   {/each}
                 </Select.Content>

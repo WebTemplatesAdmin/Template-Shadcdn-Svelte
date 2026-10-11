@@ -24,7 +24,9 @@
     {descripcion}
     {textoBoton}
     historial={resultado[1]}
-    enlaceHistorial={`/productos/${data.id}/historial`}
+    enlaceHistorial={`/productos/${data.id}/historial?volver=${encodeURIComponent(
+      `/productos/${data.id}/editar`,
+    )}`}
     modo="editar"
   />
 {:catch}
