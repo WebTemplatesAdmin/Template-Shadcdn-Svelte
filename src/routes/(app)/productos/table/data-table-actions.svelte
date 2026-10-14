@@ -3,7 +3,7 @@
   import * as DropdownMenu from "$lib/components/ui/dropdown-menu/index.js";
   import { Button } from "$lib/components/ui/button/index.js";
   import MoreHorizontal from "@lucide/svelte/icons/more-horizontal";
-  import ConfirmDialog from "$lib/components/confirmDialog/ConfirmDialog.svelte";
+  import { ConfirmDialog } from "$lib/components/ui/confirm-dialog/index.js";
   import { goto } from "$app/navigation";
 
   let {

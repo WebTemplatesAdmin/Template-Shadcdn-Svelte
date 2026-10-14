@@ -19,6 +19,28 @@ export type PresentacionProducto = {
   imagen?: string;
 };
 
+// Especificaciones variables por rubro (talla, color, peso, volumen, envase…).
+export type AtributoProducto = {
+  nombre: string;
+  valor: string;
+};
+
+// Opción de variación (ej. Talla con valores S, M, L).
+export type OpcionProducto = {
+  nombre: string;
+  valores: string[];
+};
+
+// Combinación vendible con SKU, precio y stock propios (ej. Talla M · Negro).
+export type VarianteProducto = {
+  sku: string;
+  opciones: Record<string, string>;
+  price: number;
+  costPrice?: number;
+  stock: number;
+  codigoBarras?: string;
+};
+
 export type Producto = {
   id: number;
   name: string;
@@ -36,17 +58,15 @@ export type Producto = {
   supplierId?: string;
   sku?: string;
   codigoBarras?: string;
-  volumen?: number;
-  unidadVolumen?: "ml" | "l";
-  tipoEnvase?: "vidrio" | "pet" | "lata" | "tetrapak";
-  retornable?: boolean;
-  gradosAlcohol?: number;
   diasVidaUtil?: number;
   costPrice?: number;
   currency?: "COP" | "USD" | "MXN";
   taxRate?: "0" | "5" | "19";
   location?: string;
   presentaciones?: PresentacionProducto[];
+  atributos?: AtributoProducto[];
+  opciones?: OpcionProducto[];
+  variantes?: VarianteProducto[];
   status?: "activo" | "inactivo" | "borrador";
   featured?: boolean;
 };

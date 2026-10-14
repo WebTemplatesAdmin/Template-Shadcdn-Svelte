@@ -11,12 +11,18 @@
   import Plus from "@lucide/svelte/icons/plus";
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import { productoSchema, type ProductoSchema } from "../schemas/schema";
+  import { CATEGORIAS } from "$lib/config/categorias";
+  import EventoItem from "../detail/evento-item.svelte";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
-  import { Toaster, toast } from "svelte-sonner";
+  import {
+    notificarExito,
+    notificarError,
+    notificarAviso,
+    notificarInfo,
+  } from "$lib/utils/notify";
   import type { SuperValidated, Infer } from "sveltekit-superforms";
   import ImageIcon from "@lucide/svelte/icons/image";
   import X from "@lucide/svelte/icons/x";
-  import ArrowRight from "@lucide/svelte/icons/arrow-right";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
   import Gauge from "@lucide/svelte/icons/gauge";
   import type { EventoProducto } from "$lib/types/producto";
@@ -26,8 +32,7 @@
     calcularValorInventario,
     calcularPrecioConIva,
     formatearMoneda,
-    formatearFecha,
-    ICONO_EVENTO,
+    etiquetaVariante,
   } from "$lib/utils/producto";
 
   let {
@@ -55,6 +60,9 @@
   // svelte-ignore state_referenced_locally: falso positivo conocido de Superforms
   const form = superForm(formProp, {
     validators: zod4Client(productoSchema),
+    // Requerido para datos anidados: `presentaciones` y `atributos`
+    // son arrays de objetos. Interactúa con use:enhance del <form>.
+    dataType: "json",
   });
 
   const { form: formData, enhance, submitting } = form;
@@ -64,17 +72,9 @@
   let indicePresentacionActual = $state<number | null>(null);
   const MAX_MB = 2;
 
-  let categorias = $state([
-    "gaseosa",
-    "agua",
-    "cerveza",
-    "jugo",
-    "energizante",
-    "otro",
-  ]);
+  let categorias = $state<string[]>([...CATEGORIAS]);
   let dialogNuevaCategoriaAbierto = $state(false);
   let nuevaCategoriaNombre = $state("");
-  const envases = ["vidrio", "pet", "lata", "tetrapak"];
 
   // ============ KPIs derivados del producto (solo lectura) ============
   const margen = $derived(calcularMargen($formData.costPrice, $formData.price));
@@ -88,10 +88,131 @@
     calcularPrecioConIva($formData.price, $formData.taxRate),
   );
 
+  // ============ Variantes (si existen, el precio y el stock se derivan) ============
+  const hayVariantes = $derived($formData.variantes.length > 0);
+  const precioMin = $derived(
+    $formData.variantes.length
+      ? Math.min(...$formData.variantes.map((v) => v.price))
+      : 0,
+  );
+  const precioMax = $derived(
+    $formData.variantes.length
+      ? Math.max(...$formData.variantes.map((v) => v.price))
+      : 0,
+  );
+  const stockSuma = $derived(
+    $formData.variantes.reduce((acc, v) => acc + v.stock, 0),
+  );
+
+  // Mantiene `price` y `stock` del producto en sincronía con sus variantes.
+  $effect(() => {
+    if (hayVariantes) {
+      $formData.price = precioMin;
+      $formData.stock = stockSuma;
+    }
+  });
+
   function eliminarPresentacion(index: number) {
     $formData.presentaciones = $formData.presentaciones.filter(
       (_, i) => i !== index,
     );
+  }
+
+  function agregarAtributo() {
+    $formData.atributos = [...$formData.atributos, { nombre: "", valor: "" }];
+  }
+
+  function eliminarAtributo(index: number) {
+    $formData.atributos = $formData.atributos.filter((_, i) => i !== index);
+  }
+
+  // ============ Variantes ============
+  function agregarOpcion() {
+    $formData.opciones = [...$formData.opciones, { nombre: "", valores: [] }];
+  }
+
+  function eliminarOpcion(index: number) {
+    $formData.opciones = $formData.opciones.filter((_, i) => i !== index);
+  }
+
+  function setValoresOpcion(index: number, texto: string) {
+    $formData.opciones[index].valores = texto
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+
+  function claveOpciones(opciones: Record<string, string>): string {
+    return Object.keys(opciones)
+      .sort()
+      .map((k) => `${k}:${opciones[k]}`)
+      .join("|");
+  }
+
+  function generarVariantes() {
+    // Se ignoran las filas vacías y se FUSIONAN las que repiten nombre: así
+    // funciona tanto "Talla: S, M" como dos filas "Talla" con "S" y "M".
+    const fusionadas: { nombre: string; valores: string[] }[] = [];
+    let huboFusion = false;
+    for (const op of $formData.opciones) {
+      const nombre = op.nombre.trim();
+      const valores = [
+        ...new Set(op.valores.map((v) => v.trim()).filter(Boolean)),
+      ];
+      if (!nombre || valores.length === 0) continue;
+
+      const existente = fusionadas.find(
+        (f) => f.nombre.toLowerCase() === nombre.toLowerCase(),
+      );
+      if (existente) {
+        existente.valores = [...new Set([...existente.valores, ...valores])];
+        huboFusion = true;
+      } else {
+        fusionadas.push({ nombre, valores });
+      }
+    }
+
+    if (fusionadas.length === 0) {
+      notificarAviso(
+        "Define al menos una opción",
+        "Cada opción necesita un nombre y valores (ej. Talla → S, M).",
+      );
+      return;
+    }
+
+    // Refleja la fusión en el formulario (una fila por opción)
+    $formData.opciones = fusionadas;
+
+    if (huboFusion) {
+      notificarInfo(
+        "Opciones fusionadas",
+        "Había opciones con el mismo nombre; se unieron sus valores.",
+      );
+    }
+
+    // Producto cartesiano de las opciones
+    const combinaciones = fusionadas.reduce<Record<string, string>[]>(
+      (acc, op) =>
+        acc.flatMap((combo) =>
+          op.valores.map((valor) => ({ ...combo, [op.nombre]: valor })),
+        ),
+      [{}],
+    );
+
+    // Conserva los datos ya cargados de las combinaciones existentes
+    const existentes = new Map(
+      $formData.variantes.map((v) => [claveOpciones(v.opciones), v]),
+    );
+    $formData.variantes = combinaciones.map((opciones) => {
+      const previo = existentes.get(claveOpciones(opciones));
+      return (
+        previo ?? { sku: "", opciones, price: $formData.price || 0, stock: 0 }
+      );
+    });
+  }
+
+  function eliminarVariante(index: number) {
+    $formData.variantes = $formData.variantes.filter((_, i) => i !== index);
   }
 
   function crearCategoria() {
@@ -103,7 +224,10 @@
     $formData.category = valor;
     nuevaCategoriaNombre = "";
     dialogNuevaCategoriaAbierto = false;
-    toast.success("Categoría creada con éxito");
+    notificarExito(
+      "Categoría creada",
+      `La categoría "${valor}" se creó correctamente.`,
+    );
     // TODO: llamar a tu products-ms para guardar la categoría permanentemente
   }
 
@@ -117,11 +241,17 @@
 
     for (const archivo of archivos) {
       if (!archivo.type.startsWith("image/")) {
-        toast.error(`"${archivo.name}" no es una imagen`);
+        notificarError(
+          "Archivo no válido",
+          `"${archivo.name}" no es una imagen.`,
+        );
         continue;
       }
       if (archivo.size > MAX_MB * 1024 * 1024) {
-        toast.error(`"${archivo.name}" supera los ${MAX_MB} MB`);
+        notificarError(
+          "Archivo demasiado grande",
+          `"${archivo.name}" supera los ${MAX_MB} MB.`,
+        );
         continue;
       }
       const dataUrl = await leerComoDataUrl(archivo);
@@ -173,12 +303,18 @@
       return;
     }
     if (!archivo.type.startsWith("image/")) {
-      toast.error(`" ${archivo.name} " no es una imagen`);
+      notificarError(
+        "Archivo no válido",
+        `" ${archivo.name} " no es una imagen.`,
+      );
       input.value = "";
       return;
     }
     if (archivo.size > MAX_MB * 1024 * 1024) {
-      toast.error(`" ${archivo.name} " supera los ${MAX_MB} MB`);
+      notificarError(
+        "Archivo demasiado grande",
+        `" ${archivo.name} " supera los ${MAX_MB} MB.`,
+      );
       input.value = "";
       return;
     }
@@ -193,7 +329,7 @@
   <title>{titulo} · Mis Ventas</title>
 </svelte:head>
 
-<div class="mx-auto max-w-5xl pb-24">
+<div class="animate-fade-up mx-auto max-w-5xl pb-24">
   <a
     href="/productos"
     class="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mt-5"
@@ -223,7 +359,13 @@
     </div>
   </div>
 
-  <form id="form-producto" method="POST" use:enhance class="space-y-6">
+  <form
+    id="form-producto"
+    method="POST"
+    use:enhance
+    novalidate
+    class="space-y-6"
+  >
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <!-- Columna principal -->
       <div class="space-y-6 lg:col-span-2">
@@ -309,13 +451,14 @@
               name="name"
               label="Nombre del producto"
               placeholder="Coca-Cola"
+              required
               bind:value={$formData.name}
             />
 
             <Form.Field {form} name="description">
               <Form.Control>
                 {#snippet children({ props })}
-                  <Form.Label>Descripción</Form.Label>
+                  <Form.Label>Descripción (opcional)</Form.Label>
                   <Textarea
                     {...props}
                     rows={3}
@@ -330,7 +473,7 @@
             <InputFieldV2
               {form}
               name="brand"
-              label="Marca"
+              label="Marca (opcional)"
               placeholder="Coca-Cola Company"
               bind:value={$formData.brand}
             />
@@ -341,6 +484,7 @@
                 name="sku"
                 label="SKU"
                 placeholder="COCA-350"
+                required
                 readonly={esEdicion}
                 inputClass={esEdicion
                   ? "bg-muted text-muted-foreground cursor-not-allowed"
@@ -351,7 +495,7 @@
               <InputFieldV2
                 {form}
                 name="codigoBarras"
-                label="Código de barras"
+                label="Código de barras (opcional)"
                 placeholder="7701234567890"
                 readonly={esEdicion}
                 inputClass={esEdicion
@@ -363,100 +507,82 @@
           </div>
         </div>
 
-        <!-- Bebida -->
+        <!-- Especificaciones (atributos genéricos, adaptables a cualquier rubro) -->
         <div class="rounded-lg border bg-card p-6">
-          <h2 class="mb-4 text-sm font-medium text-muted-foreground">
-            Detalles de la bebida
-          </h2>
-          <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
-              <InputFieldV2
-                {form}
-                name="volumen"
-                label="Volumen"
-                type="number"
-                placeholder="350"
-                bind:value={$formData.volumen}
-              />
-
-              <Form.Field {form} name="unidadVolumen">
-                <Form.Control>
-                  {#snippet children({ props })}
-                    <Form.Label>Unidad</Form.Label>
-                    <Select.Root
-                      type="single"
-                      bind:value={$formData.unidadVolumen}
-                      name={props.name}
-                    >
-                      <Select.Trigger {...props} class="w-full"
-                        >{$formData.unidadVolumen}</Select.Trigger
-                      >
-                      <Select.Content>
-                        <Select.Item value="ml">ml</Select.Item>
-                        <Select.Item value="l">Litros</Select.Item>
-                      </Select.Content>
-                    </Select.Root>
-                  {/snippet}
-                </Form.Control>
-                <Form.FieldErrors />
-              </Form.Field>
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-medium text-muted-foreground">
+                Especificaciones
+              </h2>
+              <p class="text-xs text-muted-foreground">
+                Agrega las que necesites: talla, color, peso, volumen, envase…
+              </p>
             </div>
-
-            <Form.Field {form} name="tipoEnvase">
-              <Form.Control>
-                {#snippet children({ props })}
-                  <Form.Label>Tipo de envase</Form.Label>
-                  <Select.Root
-                    type="single"
-                    bind:value={$formData.tipoEnvase}
-                    name={props.name}
-                  >
-                    <Select.Trigger {...props} class="w-full capitalize">
-                      {$formData.tipoEnvase || "Selecciona el envase"}
-                    </Select.Trigger>
-                    <Select.Content>
-                      {#each envases as e}
-                        <Select.Item value={e} class="capitalize"
-                          >{e}</Select.Item
-                        >
-                      {/each}
-                    </Select.Content>
-                  </Select.Root>
-                {/snippet}
-              </Form.Control>
-              <Form.FieldErrors />
-            </Form.Field>
-
-            <div class="grid grid-cols-2 gap-4">
-              <InputFieldV2
-                {form}
-                name="gradosAlcohol"
-                label="Grados de alcohol (%)"
-                type="number"
-                step="0.1"
-                placeholder="0"
-                bind:value={$formData.gradosAlcohol}
-              />
-              <InputFieldV2
-                {form}
-                name="diasVidaUtil"
-                label="Días de vida útil"
-                type="number"
-                placeholder="180"
-                bind:value={$formData.diasVidaUtil}
-              />
-            </div>
-
-            <div
-              class="flex items-center justify-between rounded-md border p-3"
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onclick={agregarAtributo}
             >
-              <div>
-                <p class="text-sm font-medium">Retornable</p>
-                <p class="text-xs text-muted-foreground">
-                  El envase se devuelve y cobra depósito
+              <Plus class="mr-2 h-4 w-4" />
+              Agregar
+            </Button>
+          </div>
+
+          <div class="space-y-4">
+            <InputFieldV2
+              {form}
+              name="diasVidaUtil"
+              label="Vida útil en días (opcional)"
+              type="number"
+              placeholder="180"
+              bind:value={$formData.diasVidaUtil}
+            />
+
+            <div class="space-y-3">
+              {#each $formData.atributos as _, i}
+                <div class="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
+                  <div class="space-y-1">
+                    <label
+                      class="text-xs text-muted-foreground"
+                      for={`attr-nombre-${i}`}>Nombre</label
+                    >
+                    <input
+                      id={`attr-nombre-${i}`}
+                      bind:value={$formData.atributos[i].nombre}
+                      placeholder="Volumen"
+                      class="h-9 w-full rounded-md border px-2.5 text-sm"
+                    />
+                  </div>
+                  <div class="space-y-1">
+                    <label
+                      class="text-xs text-muted-foreground"
+                      for={`attr-valor-${i}`}>Valor</label
+                    >
+                    <input
+                      id={`attr-valor-${i}`}
+                      bind:value={$formData.atributos[i].valor}
+                      placeholder="350 ml"
+                      class="h-9 w-full rounded-md border px-2.5 text-sm"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Eliminar especificación ${i + 1}`}
+                    onclick={() => eliminarAtributo(i)}
+                  >
+                    <Trash2 class="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              {/each}
+
+              {#if $formData.atributos.length === 0}
+                <p class="py-6 text-center text-sm text-muted-foreground">
+                  Sin especificaciones. Agrega las que necesites.
                 </p>
-              </div>
-              <Switch bind:checked={$formData.retornable} />
+              {/if}
             </div>
           </div>
         </div>
@@ -475,17 +601,35 @@
                 type="number"
                 step="0.01"
                 placeholder="2500"
+                required
                 bind:value={$formData.costPrice}
               />
-              <InputFieldV2
-                {form}
-                name="price"
-                label="Precio de venta (unidad)"
-                type="number"
-                step="0.01"
-                placeholder="3500"
-                bind:value={$formData.price}
-              />
+              {#if hayVariantes}
+                <div class="space-y-1">
+                  <p class="text-sm font-medium leading-none">
+                    Precio de venta (desde variantes)
+                  </p>
+                  <p
+                    class="flex h-9 items-center rounded-md border bg-muted px-3 text-sm text-muted-foreground"
+                  >
+                    {formatearMoneda(precioMin, $formData.currency)} – {formatearMoneda(
+                      precioMax,
+                      $formData.currency,
+                    )}
+                  </p>
+                </div>
+              {:else}
+                <InputFieldV2
+                  {form}
+                  name="price"
+                  label="Precio de venta (unidad)"
+                  type="number"
+                  step="0.01"
+                  placeholder="3500"
+                  required
+                  bind:value={$formData.price}
+                />
+              {/if}
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -537,14 +681,28 @@
             </div>
 
             <div class="grid grid-cols-2 gap-4">
-              <InputFieldV2
-                {form}
-                name="stock"
-                label="Stock (unidades individuales)"
-                type="number"
-                placeholder="480"
-                bind:value={$formData.stock}
-              />
+              {#if hayVariantes}
+                <div class="space-y-1">
+                  <p class="text-sm font-medium leading-none">
+                    Stock (suma de variantes)
+                  </p>
+                  <p
+                    class="flex h-9 items-center rounded-md border bg-muted px-3 text-sm text-muted-foreground"
+                  >
+                    {stockSuma.toLocaleString("es-CO")}
+                  </p>
+                </div>
+              {:else}
+                <InputFieldV2
+                  {form}
+                  name="stock"
+                  label="Stock (unidades individuales)"
+                  type="number"
+                  placeholder="480"
+                  required
+                  bind:value={$formData.stock}
+                />
+              {/if}
               <InputFieldV2
                 {form}
                 name="minStock"
@@ -558,7 +716,7 @@
             <InputFieldV2
               {form}
               name="location"
-              label="Ubicación en almacén"
+              label="Ubicación en almacén (opcional)"
               placeholder="Pasillo 4, Estante B"
               bind:value={$formData.location}
             />
@@ -703,6 +861,150 @@
             {/if}
           </div>
         </div>
+
+        <!-- Variantes (opciones con stock/precio propios) -->
+        <div class="rounded-lg border bg-card p-6">
+          <div class="mb-4 flex items-center justify-between">
+            <div>
+              <h2 class="text-sm font-medium text-muted-foreground">
+                Variantes
+              </h2>
+              <p class="text-xs text-muted-foreground">
+                Opcional. Úsalo cuando cada combinación (talla, color…) tenga
+                stock y precio propios.
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onclick={agregarOpcion}
+              >
+                <Plus class="mr-2 h-4 w-4" />
+                Opción
+              </Button>
+              <Button type="button" size="sm" onclick={generarVariantes}>
+                Generar
+              </Button>
+            </div>
+          </div>
+
+          {#if $formData.opciones.length === 0}
+            <p class="py-6 text-center text-sm text-muted-foreground">
+              Sin opciones. Agrega una fila por opción (ej. Talla) con sus
+              valores separados por coma (S, M, L) y pulsa "Generar".
+            </p>
+          {:else}
+            <div class="space-y-3">
+              {#each $formData.opciones as _, i}
+                <div class="grid grid-cols-[1fr_2fr_auto] items-end gap-3">
+                  <div class="space-y-1">
+                    <label
+                      class="text-xs text-muted-foreground"
+                      for={`op-nombre-${i}`}>Opción</label
+                    >
+                    <input
+                      id={`op-nombre-${i}`}
+                      bind:value={$formData.opciones[i].nombre}
+                      placeholder="Talla"
+                      class="h-9 w-full rounded-md border px-2.5 text-sm"
+                    />
+                  </div>
+                  <div class="space-y-1">
+                    <label
+                      class="text-xs text-muted-foreground"
+                      for={`op-valores-${i}`}
+                      >Valores (separados por coma)</label
+                    >
+                    <input
+                      id={`op-valores-${i}`}
+                      value={$formData.opciones[i].valores.join(", ")}
+                      oninput={(e) =>
+                        setValoresOpcion(i, e.currentTarget.value)}
+                      placeholder="S, M, L"
+                      class="h-9 w-full rounded-md border px-2.5 text-sm"
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Eliminar opción ${i + 1}`}
+                    onclick={() => eliminarOpcion(i)}
+                  >
+                    <Trash2 class="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              {/each}
+            </div>
+          {/if}
+
+          {#if $formData.variantes.length > 0}
+            <p class="mt-4 text-xs text-muted-foreground">
+              Cada fila es una combinación única; define su SKU, precio y stock.
+            </p>
+            <div class="mt-2 overflow-x-auto rounded-md border">
+              <table class="w-full text-sm">
+                <thead class="bg-muted/50 text-muted-foreground">
+                  <tr>
+                    <th class="px-3 py-2 text-left font-medium">Variante</th>
+                    <th class="px-3 py-2 text-left font-medium">SKU</th>
+                    <th class="px-3 py-2 text-left font-medium">Precio</th>
+                    <th class="px-3 py-2 text-left font-medium">Stock</th>
+                    <th class="px-3 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each $formData.variantes as _, i}
+                    <tr class="border-t">
+                      <td class="px-3 py-2 font-medium">
+                        {etiquetaVariante($formData.variantes[i].opciones) ||
+                          "—"}
+                      </td>
+                      <td class="px-3 py-2">
+                        <input
+                          bind:value={$formData.variantes[i].sku}
+                          placeholder="CAM-M-NEG"
+                          class="h-8 w-full min-w-28 rounded-md border px-2 text-sm"
+                        />
+                      </td>
+                      <td class="px-3 py-2">
+                        <input
+                          type="number"
+                          bind:value={$formData.variantes[i].price}
+                          class="h-8 w-24 rounded-md border px-2 text-sm"
+                        />
+                      </td>
+                      <td class="px-3 py-2">
+                        <input
+                          type="number"
+                          bind:value={$formData.variantes[i].stock}
+                          class="h-8 w-20 rounded-md border px-2 text-sm"
+                        />
+                      </td>
+                      <td class="px-3 py-2 text-right">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Eliminar variante ${i + 1}`}
+                          onclick={() => eliminarVariante(i)}
+                        >
+                          <Trash2 class="h-4 w-4 text-destructive" />
+                        </Button>
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+            <p class="mt-2 text-xs text-muted-foreground">
+              Con variantes, el <strong>precio (desde)</strong> y el
+              <strong>stock</strong> del producto se calculan automáticamente.
+            </p>
+          {/if}
+        </div>
       </div>
 
       <!-- Columna lateral: Categoría + Estado, sticky -->
@@ -772,13 +1074,20 @@
               <Form.Field {form} name="category">
                 <Form.Control>
                   {#snippet children({ props })}
-                    <Form.Label>Categoría</Form.Label>
+                    <Form.Label>
+                      Categoría
+                      <span class="ml-0.5 text-destructive">*</span>
+                    </Form.Label>
                     <Select.Root
                       type="single"
                       bind:value={$formData.category}
                       name={props.name}
                     >
-                      <Select.Trigger {...props} class="w-full capitalize">
+                      <Select.Trigger
+                        {...props}
+                        class="w-full capitalize"
+                        aria-required="true"
+                      >
                         {$formData.category || "Selecciona una categoría"}
                       </Select.Trigger>
                       <Select.Content>
@@ -853,41 +1162,7 @@
               {:else}
                 <ul class="space-y-4">
                   {#each historial as evento (evento.id)}
-                    <li class="flex gap-3">
-                      <div
-                        class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted"
-                      >
-                        <!-- svelte-ignore svelte_component_deprecated -->
-                        <svelte:component
-                          this={ICONO_EVENTO[evento.tipo]}
-                          class="h-4 w-4 text-muted-foreground"
-                        />
-                      </div>
-                      <div class="min-w-0 flex-1 space-y-0.5">
-                        <div class="flex items-start justify-between gap-2">
-                          <p class="text-sm font-medium leading-tight">
-                            {evento.titulo}
-                          </p>
-                          <span
-                            class="shrink-0 text-[11px] text-muted-foreground"
-                          >
-                            {formatearFecha(evento.fecha)}
-                          </span>
-                        </div>
-                        <p class="text-xs text-muted-foreground">
-                          {evento.detalle}
-                        </p>
-                        {#if evento.enlace}
-                          <a
-                            href={evento.enlace}
-                            class="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                          >
-                            Ver detalle
-                            <ArrowRight class="h-3 w-3" />
-                          </a>
-                        {/if}
-                      </div>
-                    </li>
+                    <EventoItem {evento} />
                   {/each}
                 </ul>
               {/if}
@@ -974,12 +1249,3 @@
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
-
-<Toaster
-  richColors
-  style="
-    --success-bg: #1a7f1a; 
-    --success-text: #fff; 
-    --success-border: #1a7f1a;
-  "
-/>

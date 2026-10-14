@@ -9,6 +9,7 @@ import ColumnHeader from "./column-header.svelte";
 import ProductCell from "./product-cell.svelte";
 import StockCell from "./stock-cell.svelte";
 import type { Producto } from "$lib/types/producto";
+import { precioDesde, precioHasta, stockTotal } from "$lib/utils/producto";
 
 // El tipo Producto vive en $lib/types (fuente única). Se re-exporta
 // para conservar `import { type Producto } from "./table/columns"`.
@@ -89,10 +90,15 @@ export function createColumns(
         if (max !== undefined && valor > max) return false;
         return true;
       },
-      cell: ({ getValue }) => {
+      cell: ({ row }) => {
+        const desde = precioDesde(row.original);
+        const hasta = precioHasta(row.original);
+        const texto =
+          desde === hasta
+            ? `$${desde.toLocaleString()}`
+            : `$${desde.toLocaleString()} – $${hasta.toLocaleString()}`;
         const raw = createRawSnippet<[]>(() => ({
-          render: () =>
-            `<span>$${(getValue() as number).toLocaleString()}</span>`,
+          render: () => `<span>${texto}</span>`,
         }));
         return renderSnippet(raw, []);
       },
@@ -108,7 +114,7 @@ export function createColumns(
       },
       cell: ({ row }) =>
         renderComponent(StockCell, {
-          stock: row.original.stock,
+          stock: stockTotal(row.original),
           minStock: row.original.minStock,
         }),
     },

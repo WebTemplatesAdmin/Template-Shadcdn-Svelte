@@ -43,7 +43,7 @@
     {
       id: 2,
       titulo: "Stock bajo",
-      detalle: "Camiseta básica algodón: quedan 3 unidades",
+      detalle: "Coca-Cola 350ml: quedan 3 unidades",
       tiempo: "Hace 1 hora",
     },
     {

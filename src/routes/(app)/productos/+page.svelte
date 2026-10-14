@@ -13,9 +13,10 @@
   import MoreVertical from "@lucide/svelte/icons/more-vertical";
   import ProductRail from "./product-rail.svelte";
   import * as Sheet from "$lib/components/ui/sheet/index.js";
-  import ConfirmDialog from "$lib/components/confirmDialog/ConfirmDialog.svelte";
-  import { toast, Toaster } from "svelte-sonner";
+  import { ConfirmDialog } from "$lib/components/ui/confirm-dialog/index.js";
+  import { notificarExito, notificarAviso } from "$lib/utils/notify";
   import DataTableSkeleton from "$lib/components/data-table/data-table-skeleton.svelte";
+  import { CATEGORIAS } from "$lib/config/categorias";
 
   let { data } = $props();
 
@@ -24,7 +25,10 @@
       .getFilteredSelectedRowModel()
       .rows.map((r: any) => r.original) as Producto[];
     if (seleccionados.length === 0) {
-      alert("Selecciona al menos un producto");
+      notificarAviso(
+        "No hay productos seleccionados",
+        "Marca la casilla de al menos un producto de la lista para poder exportarlo.",
+      );
       return;
     }
     const csv =
@@ -39,25 +43,8 @@
     URL.revokeObjectURL(url);
   }
 
-  function eliminarSeleccionados(table: any) {
-    const seleccionados = table
-      .getFilteredSelectedRowModel()
-      .rows.map((r: any) => r.original) as Producto[];
-    if (seleccionados.length === 0) return;
-
-    const confirmar = confirm(
-      `¿Eliminar ${seleccionados.length} producto(s)? Esta acción no se puede deshacer.`,
-    );
-    if (!confirmar) return;
-
-    // TODO: llamar a tu products-ms para eliminar cada uno por su id
-    console.log(
-      "Eliminando:",
-      seleccionados.map((p) => p.id),
-    );
-  }
-
-  const categorias = ["Ropa", "Calzado", "Accesorios"]; // TODO: sacar dinámicamente de tus productos o de tu products-ms
+  // Categorías desde la fuente única ($lib/config/categorias.ts)
+  const categorias = [...CATEGORIAS];
 
   let precioMin = $state("");
   let precioMax = $state("");
@@ -98,7 +85,10 @@
       "Eliminando:",
       seleccionados.map((p) => p.id),
     );
-    toast.success("Eliminados");
+    notificarExito(
+      "Productos eliminados",
+      "Los productos seleccionados se eliminaron correctamente.",
+    );
 
     confirmEliminarAbierto = false;
   }
@@ -107,7 +97,10 @@
   function eliminarProductoIndividual(id: number) {
     // TODO: llamar a tu products-ms para eliminar por id
     console.log("Eliminando producto individual:", id);
-    toast.success("Producto eliminado");
+    notificarExito(
+      "Producto eliminado",
+      "El producto se eliminó correctamente.",
+    );
   }
 
   // 👇 NUEVO: se generan las columnas pasándole la función de arriba
@@ -121,7 +114,7 @@
 <div class="pr-16">
   <div class="min-w-0 flex-1">
     {#await data.productos}
-      <DataTableSkeleton columnas={6} filas={10} />
+      <DataTableSkeleton columnas={6} filas={15} />
     {:then productos}
       <DataTable data={productos} {columns}>
         {#snippet toolbar({ table })}
@@ -215,7 +208,7 @@
                         {table.atoms.pagination.get().pageSize}
                       </Select.Trigger>
                       <Select.Content>
-                        {#each [5, 10, 50, 100] as size}
+                        {#each [5, 10, 15, 50, 100] as size}
                           <Select.Item value={String(size)}>{size}</Select.Item>
                         {/each}
                       </Select.Content>
@@ -254,7 +247,7 @@
                   {#if table.getFilteredSelectedRowModel().rows.length > 0}
                     <DropdownMenu.Item
                       variant="destructive"
-                      onclick={() => eliminarSeleccionados(table)}
+                      onclick={() => pedirConfirmacionEliminar(table)}
                     >
                       Eliminar ({table.getFilteredSelectedRowModel().rows
                         .length})
@@ -360,7 +353,7 @@
                   {table.atoms.pagination.get().pageSize}
                 </Select.Trigger>
                 <Select.Content>
-                  {#each [5, 10, 50, 100] as size}
+                  {#each [5, 10, 15, 50, 100] as size}
                     <Select.Item value={String(size)}>{size}</Select.Item>
                   {/each}
                 </Select.Content>
@@ -427,13 +420,4 @@
   description="Esta acción no se puede deshacer. Los productos se eliminarán permanentemente."
   confirmText="Eliminar"
   onConfirm={confirmarEliminacion}
-/>
-
-<Toaster
-  richColors
-  style="
-    --success-bg: #1a7f1a; 
-    --success-text: #fff; 
-    --success-border: #1a7f1a;
-  "
 />

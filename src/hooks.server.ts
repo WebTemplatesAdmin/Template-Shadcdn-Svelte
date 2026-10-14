@@ -38,13 +38,13 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   // Caso especial: ruta raíz
   if (pathname === "/") {
-    redirect(302, sesion ? "/dashboard" : "/login");
+    redirect(303, sesion ? "/dashboard" : "/login");
   }
 
   // Usuario logueado intentando entrar a login/register
   if (sesion && esRutaAuth(pathname)) {
     const redirectTo = event.url.searchParams.get("redirectTo") || "/dashboard";
-    redirect(307, redirectTo);
+    redirect(303, redirectTo);
   }
 
   // Usuario sin sesión intentando entrar a ruta protegida
@@ -53,7 +53,7 @@ export const handle: Handle = async ({ event, resolve }) => {
     const redirLogin = `/login?redirectTo=${encodeURIComponent(rutaDestino)}`;
     // Protección: NO hacer redirect si ya está yendo a /login (romper loop)
     if (!rutaDestino.startsWith("/login")) {
-      redirect(307, redirLogin);
+      redirect(303, redirLogin);
     }
   }
 
