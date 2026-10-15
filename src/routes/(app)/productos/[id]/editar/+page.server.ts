@@ -1,7 +1,10 @@
 import { error, fail, redirect } from "@sveltejs/kit";
 import { superValidate } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
-import { productoSchema } from "../../schemas/schema";
+import {
+  construirPayloadProducto,
+  productoSchema,
+} from "../../schemas/schema";
 import {
   obtenerProductoPorId,
   obtenerHistorialProducto,
@@ -40,11 +43,13 @@ export const actions: Actions = {
       return fail(400, { form });
     }
 
-    // TODO: llamar a actualizarProducto(fetch, Number(params.id), form.data)
-    const payload = { id: Number(params.id), ...form.data };
+    // JSON que tu backend debe recibir (ver `construirPayloadProducto`).
+    const payload = construirPayloadProducto(form.data, Number(params.id));
     console.log(
       `[productos] Payload (ACTUALIZAR) →\n${JSON.stringify(payload, null, 2)}`,
     );
+
+    // TODO: llamar a tu API → PUT /productos/:id con `payload`.
 
     redirect(303, "/productos");
   },

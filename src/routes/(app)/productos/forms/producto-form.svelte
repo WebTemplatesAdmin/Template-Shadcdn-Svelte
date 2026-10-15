@@ -63,6 +63,22 @@
     // Requerido para datos anidados: `presentaciones` y `atributos`
     // son arrays de objetos. Interactúa con use:enhance del <form>.
     dataType: "json",
+    // Al guardar, el servidor responde con un redirect: damos feedback aquí.
+    // El toast sobrevive la navegación porque el <Toaster /> vive en el layout.
+    onResult({ result }) {
+      if (result.type !== "redirect") return;
+      if (esEdicion) {
+        notificarExito(
+          "Producto actualizado",
+          "Los cambios se guardaron correctamente.",
+        );
+      } else {
+        notificarExito(
+          "Producto creado",
+          "El producto se registró correctamente.",
+        );
+      }
+    },
   });
 
   const { form: formData, enhance, submitting } = form;
