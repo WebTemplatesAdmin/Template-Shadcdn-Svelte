@@ -108,3 +108,19 @@ export type Presentacion = z.infer<typeof presentacionSchema>;
 export type Atributo = z.infer<typeof atributoSchema>;
 export type Opcion = z.infer<typeof opcionSchema>;
 export type Variante = z.infer<typeof varianteSchema>;
+
+// ============ Contrato con la API (payload) ============
+export type ProductoDatos = z.infer<typeof productoSchema>;
+export type ProductoPayload = ProductoDatos & { id?: number };
+
+/**
+ * Construye el JSON que se envía a tu backend.
+ * Único punto de conexión: aquí llamas a `POST /productos` (alta) o
+ * `PUT /productos/:id` (edición) con el objeto devuelto.
+ */
+export function construirPayloadProducto(
+  datos: ProductoDatos,
+  id?: number,
+): ProductoPayload {
+  return id === undefined ? { ...datos } : { id, ...datos };
+}
