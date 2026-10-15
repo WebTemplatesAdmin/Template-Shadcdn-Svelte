@@ -8,10 +8,13 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import PedidoDetail from "./detail/pedido-detail.svelte";
   import { createColumns } from "./table/columns";
+  import { METODOS_PAGO } from "$lib/config/pagos";
   import type { EstadoPedido, Pedido } from "$lib/types/pedido";
   import {
+    CANALES,
     contarPorEstado,
     ESTADOS,
+    ETIQUETA_CANAL,
     ETIQUETA_ESTADO,
     formatearFechaHoraPedido,
     formatearMonto,
@@ -116,7 +119,9 @@
                 {/each}
               </ToggleGroup.Root>
 
-              <div class="flex flex-col gap-2 md:flex-row md:items-center">
+              <div
+                class="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center"
+              >
                 <Input
                   placeholder="Buscar por código, cliente o email..."
                   value={(table
@@ -146,11 +151,33 @@
                   </Select.Trigger>
                   <Select.Content>
                     <Select.Item value="">Todos los métodos</Select.Item>
-                    <Select.Item value="Tarjeta">Tarjeta</Select.Item>
-                    <Select.Item value="Efectivo">Efectivo</Select.Item>
-                    <Select.Item value="Transferencia"
-                      >Transferencia</Select.Item
-                    >
+                    {#each METODOS_PAGO as metodo}
+                      <Select.Item value={metodo}>{metodo}</Select.Item>
+                    {/each}
+                  </Select.Content>
+                </Select.Root>
+
+                <Select.Root
+                  type="single"
+                  value={(table
+                    .getColumn("canal")
+                    ?.getFilterValue() as string) ?? ""}
+                  onValueChange={(valor) =>
+                    table
+                      .getColumn("canal")
+                      ?.setFilterValue(valor || undefined)}
+                >
+                  <Select.Trigger class="h-9 md:w-[170px]">
+                    {(table.getColumn("canal")?.getFilterValue() as string) ||
+                      "Origen"}
+                  </Select.Trigger>
+                  <Select.Content>
+                    <Select.Item value="">Todos los orígenes</Select.Item>
+                    {#each CANALES as canal}
+                      <Select.Item value={canal}>
+                        {ETIQUETA_CANAL[canal]}
+                      </Select.Item>
+                    {/each}
                   </Select.Content>
                 </Select.Root>
               </div>

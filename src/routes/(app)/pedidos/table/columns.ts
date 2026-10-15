@@ -9,7 +9,9 @@ import type { EstadoPedido, Pedido } from "$lib/types/pedido";
 import { formatearMonto, totalUnidades } from "$lib/utils/pedido";
 import PedidoCell from "./pedido-cell.svelte";
 import ClienteCell from "./cliente-cell.svelte";
+import OrigenCell from "./origen-cell.svelte";
 import ArticulosCell from "./articulos-cell.svelte";
+import PagoCell from "./pago-cell.svelte";
 import EstadoCell from "./estado-cell.svelte";
 import PedidoAcciones from "./pedido-acciones.svelte";
 
@@ -76,6 +78,18 @@ export function createColumns(
         }),
     },
     {
+      id: "canal",
+      accessorFn: (row) => row.canal,
+      header: ({ column }) =>
+        renderComponent(ColumnHeader, { column, title: "Origen" }),
+      enableColumnFilter: true,
+      cell: ({ row }) =>
+        renderComponent(OrigenCell, {
+          canal: row.original.canal,
+          creadoPor: row.original.creadoPor,
+        }),
+    },
+    {
       id: "articulos",
       accessorFn: (row) => totalUnidades(row),
       header: ({ column }) =>
@@ -100,6 +114,11 @@ export function createColumns(
       header: ({ column }) =>
         renderComponent(ColumnHeader, { column, title: "Pago" }),
       enableColumnFilter: true,
+      cell: ({ row }) =>
+        renderComponent(PagoCell, {
+          metodo: row.original.metodoPago,
+          estadoPago: row.original.estadoPago,
+        }),
     },
     {
       accessorKey: "estado",
