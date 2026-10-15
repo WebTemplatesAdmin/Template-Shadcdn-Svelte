@@ -1,5 +1,6 @@
 // src/lib/utils/pedido.ts
 // Helpers de dominio para pedidos. Mismo enfoque que $lib/utils/producto.ts.
+import { MOMENTO_COBRO } from "$lib/config/pagos";
 import type {
   CanalPedido,
   EstadoPago,
@@ -90,6 +91,69 @@ export const ESTILO_ESTADO: Record<
   },
   cancelado: { variante: "destructive", clase: "" },
 };
+
+/** Siguiente paso del flujo, o `null` si ya terminó (entregado/cancelado). */
+export function siguienteEstado(estado: EstadoPedido): EstadoPedido | null {
+  if (estado === "entregado" || estado === "cancelado") return null;
+  return ORDEN_ESTADOS[ORDEN_ESTADOS.indexOf(estado) + 1] ?? null;
+}
+
+/** Solo se cancela antes de entregar: después es una devolución. */
+export function puedeCancelar(pedido: Pedido): boolean {
+  return pedido.estado !== "entregado" && pedido.estado !== "cancelado";
+}
+
+/** Queda dinero por cobrar (efectivo contra entrega o crédito). */
+export function puedeCobrar(pedido: Pedido): boolean {
+  return pedido.estadoPago === "pendiente" && pedido.estado !== "cancelado";
+}
+
+/**
+ * Reglas de negocio al mover un pedido de estado:
+ * - cancelar un pedido ya cobrado ⇒ queda reembolsado;
+ * - entregar un pedido con cobro contra entrega ⇒ queda pagado.
+ */
+export function aplicarCambioEstado(
+  pedido: Pedido,
+  estado: EstadoPedido,
+  ahora: string,
+): Pedido {
+  const actualizado: Pedido = {
+    ...pedido,
+    estado,
+    historial: [...pedido.historial, { estado, fecha: ahora }],
+  };
+
+  if (estado === "cancelado" && pedido.estadoPago === "pagado") {
+    return { ...actualizado, estadoPago: "reembolsado" };
+  }
+
+  const cobraAlEntregar = MOMENTO_COBRO[pedido.metodoPago] === "entrega";
+  if (
+    estado === "entregado" &&
+    pedido.estadoPago === "pendiente" &&
+    cobraAlEntregar
+  ) {
+    return { ...actualizado, estadoPago: "pagado", pagadoEn: ahora };
+  }
+
+  return actualizado;
+}
+
+/** Contrato con tu API: PATCH /pedidos/:id/estado */
+export function payloadCambioEstado(pedido: Pedido, estado: EstadoPedido) {
+  return { id: pedido.id, codigo: pedido.codigo, estado };
+}
+
+/** Contrato con tu API: PATCH /pedidos/:id/pago */
+export function payloadCobro(pedido: Pedido, pagadoEn: string) {
+  return {
+    id: pedido.id,
+    codigo: pedido.codigo,
+    estadoPago: "pagado" as EstadoPago,
+    pagadoEn,
+  };
+}
 
 /** Unidades totales: suma de cantidades. */
 export function totalUnidades(pedido: Pedido): number {
