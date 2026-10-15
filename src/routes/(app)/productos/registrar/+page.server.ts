@@ -1,7 +1,7 @@
 import { fail, redirect } from "@sveltejs/kit";
-import { superValidate, message } from "sveltekit-superforms";
+import { superValidate } from "sveltekit-superforms";
 import { zod4 } from "sveltekit-superforms/adapters";
-import { productoSchema } from "../schemas/schema";
+import { construirPayloadProducto, productoSchema } from "../schemas/schema";
 import type { Actions, PageServerLoad } from "./$types";
 
 export const load: PageServerLoad = async () => {
@@ -17,11 +17,13 @@ export const actions: Actions = {
       return fail(400, { form });
     }
 
-    // TODO: llamar a tu products-ms para crear el producto real
-    const payload = form.data;
+    // JSON que tu backend debe recibir (ver `construirPayloadProducto`).
+    const payload = construirPayloadProducto(form.data);
     console.log(
       `[productos] Payload (CREAR) →\n${JSON.stringify(payload, null, 2)}`,
     );
+
+    // TODO: llamar a tu API → POST /productos con `payload`.
 
     redirect(303, "/productos");
   },
