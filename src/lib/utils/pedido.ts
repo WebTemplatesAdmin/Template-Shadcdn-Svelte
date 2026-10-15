@@ -1,6 +1,11 @@
 // src/lib/utils/pedido.ts
 // Helpers de dominio para pedidos. Mismo enfoque que $lib/utils/producto.ts.
-import type { EstadoPedido, Pedido } from "$lib/types/pedido";
+import type {
+  CanalPedido,
+  EstadoPago,
+  EstadoPedido,
+  Pedido,
+} from "$lib/types/pedido";
 
 /** Orden del flujo. Fuera de él queda "cancelado". */
 export const ORDEN_ESTADOS: EstadoPedido[] = [
@@ -23,6 +28,44 @@ export const ETIQUETA_ESTADO: Record<EstadoPedido, string> = {
 };
 
 type VarianteBadge = "default" | "secondary" | "destructive" | "outline";
+
+/** Cómo entró el pedido. */
+export const ETIQUETA_CANAL: Record<CanalPedido, string> = {
+  web: "Tienda web",
+  telefono: "Teléfono",
+  whatsapp: "WhatsApp",
+  presencial: "Presencial",
+};
+
+/** Orígenes disponibles (para filtros). */
+export const CANALES: CanalPedido[] = [
+  "web",
+  "telefono",
+  "whatsapp",
+  "presencial",
+];
+
+/** Estado del cobro ("pendiente" se muestra como "Por cobrar"). */
+export const ETIQUETA_PAGO: Record<EstadoPago, string> = {
+  pendiente: "Por cobrar",
+  pagado: "Pagado",
+  reembolsado: "Reembolsado",
+};
+
+export const ESTILO_PAGO: Record<
+  EstadoPago,
+  { variante: VarianteBadge; clase: string }
+> = {
+  pendiente: {
+    variante: "outline",
+    clase: "border-amber-500/40 bg-amber-500/10 text-amber-600",
+  },
+  pagado: {
+    variante: "outline",
+    clase: "border-emerald-500/40 bg-emerald-500/10 text-emerald-600",
+  },
+  reembolsado: { variante: "secondary", clase: "" },
+};
 
 /**
  * Estilo del estado: variante del Badge + acento del flujo.

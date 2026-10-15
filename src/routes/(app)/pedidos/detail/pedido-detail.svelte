@@ -8,7 +8,10 @@
   import {
     contarArticulos,
     ESTILO_ESTADO,
+    ESTILO_PAGO,
+    ETIQUETA_CANAL,
     ETIQUETA_ESTADO,
+    ETIQUETA_PAGO,
     formatearFechaHoraPedido,
     formatearMonto,
     totalUnidades,
@@ -17,10 +20,11 @@
   let { pedido }: { pedido: Pedido } = $props();
 
   const estilo = $derived(ESTILO_ESTADO[pedido.estado]);
+  const estiloPago = $derived(ESTILO_PAGO[pedido.estadoPago]);
   const ultimo = $derived(pedido.historial.length - 1);
 </script>
 
-<div class="flex flex-col gap-6 px-4">
+<div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto px-4">
   <!-- Cliente -->
   <section class="flex flex-col gap-1">
     <h3
@@ -32,6 +36,23 @@
     <p class="text-xs text-muted-foreground">{pedido.cliente.email}</p>
     <p class="text-xs text-muted-foreground">{pedido.cliente.telefono}</p>
     <p class="text-xs text-muted-foreground">{pedido.cliente.direccion}</p>
+  </section>
+
+  <Separator />
+
+  <!-- Origen -->
+  <section class="flex flex-col gap-1">
+    <h3
+      class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+    >
+      Origen
+    </h3>
+    <p class="text-sm font-medium">{ETIQUETA_CANAL[pedido.canal]}</p>
+    <p class="text-xs text-muted-foreground">
+      {pedido.creadoPor
+        ? `Registrado por ${pedido.creadoPor}`
+        : "Creado por el cliente"}
+    </p>
   </section>
 
   <Separator />
@@ -50,7 +71,11 @@
             class="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted"
           >
             {#if item.imagen}
-              <img src={item.imagen} alt="" class="h-full w-full object-cover" />
+              <img
+                src={item.imagen}
+                alt=""
+                class="h-full w-full object-cover"
+              />
             {:else}
               <ImageIcon class="size-4 text-muted-foreground" />
             {/if}
@@ -90,9 +115,32 @@
       <span>Total</span>
       <span class="tabular-nums">{formatearMonto(pedido.total)}</span>
     </div>
-    <p class="text-xs text-muted-foreground">
-      Método de pago: {pedido.metodoPago}
-    </p>
+  </section>
+
+  <Separator />
+
+  <!-- Pago -->
+  <section class="flex flex-col gap-2">
+    <div class="flex items-center justify-between">
+      <h3
+        class="text-xs font-medium uppercase tracking-wide text-muted-foreground"
+      >
+        Pago
+      </h3>
+      <Badge variant={estiloPago.variante} class={estiloPago.clase}>
+        {ETIQUETA_PAGO[pedido.estadoPago]}
+      </Badge>
+    </div>
+    <p class="text-sm">{pedido.metodoPago}</p>
+    {#if pedido.pagadoEn}
+      <p class="text-xs text-muted-foreground">
+        Cobrado el {formatearFechaHoraPedido(pedido.pagadoEn)}
+      </p>
+    {:else if pedido.vencimiento}
+      <p class="text-xs text-muted-foreground">
+        Vence el {formatearFechaHoraPedido(pedido.vencimiento)}
+      </p>
+    {/if}
   </section>
 
   {#if pedido.notas}

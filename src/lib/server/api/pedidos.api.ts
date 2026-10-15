@@ -8,8 +8,11 @@
  * necesitan cambios.
  * ============================================================
  */
+import { DIAS_CREDITO, MOMENTO_COBRO } from "$lib/config/pagos";
 import { ORDEN_ESTADOS } from "$lib/utils/pedido";
 import type {
+  CanalPedido,
+  EstadoPago,
   EstadoPedido,
   EventoEstado,
   ItemPedido,
@@ -27,8 +30,46 @@ type ItemBase = Omit<ItemPedido, "productoId">;
 
 type PedidoBase = Omit<
   Pedido,
-  "items" | "subtotal" | "impuesto" | "envio" | "total" | "historial"
+  | "items"
+  | "canal"
+  | "creadoPor"
+  | "estadoPago"
+  | "pagadoEn"
+  | "vencimiento"
+  | "subtotal"
+  | "impuesto"
+  | "envio"
+  | "total"
+  | "historial"
 > & { items: ItemBase[]; envio?: number };
+
+/**
+ * Origen de cada pedido: `web` lo creó el cliente; el resto, un vendedor
+ * (teléfono, WhatsApp o presencial).
+ */
+const ORIGEN_POR_ID: Record<
+  number,
+  { canal: CanalPedido; creadoPor?: string }
+> = {
+  1042: { canal: "web" },
+  1041: { canal: "whatsapp", creadoPor: "Ana Gómez" },
+  1040: { canal: "telefono", creadoPor: "Luis Torres" },
+  1039: { canal: "whatsapp", creadoPor: "Ana Gómez" },
+  1038: { canal: "web" },
+  1037: { canal: "telefono", creadoPor: "Marta Ruiz" },
+  1036: { canal: "web" },
+  1035: { canal: "presencial", creadoPor: "Luis Torres" },
+  1034: { canal: "whatsapp", creadoPor: "Ana Gómez" },
+  1033: { canal: "web" },
+  1032: { canal: "telefono", creadoPor: "Marta Ruiz" },
+  1031: { canal: "web" },
+  1030: { canal: "whatsapp", creadoPor: "Luis Torres" },
+  1029: { canal: "presencial", creadoPor: "Ana Gómez" },
+  1028: { canal: "web" },
+  1027: { canal: "telefono", creadoPor: "Marta Ruiz" },
+  1026: { canal: "telefono", creadoPor: "Ana Gómez" },
+  1025: { canal: "web" },
+};
 
 /** Id del producto en el catálogo (coherente con productos.api.ts). */
 const PRODUCTO_POR_NOMBRE: Record<string, number> = {
@@ -98,15 +139,47 @@ function crearPedido(base: PedidoBase): Pedido {
   );
   const impuesto = Math.round(subtotal * IVA);
   const envio = base.envio ?? ENVIO_ESTANDAR;
+  const historial = construirHistorial(base.estado, base.fecha);
+  const origen = ORIGEN_POR_ID[base.id] ?? { canal: "web" as CanalPedido };
+
+  // Capa financiera: el cobro depende del método y del avance del pedido.
+  const momento = MOMENTO_COBRO[base.metodoPago];
+  const ultimoEvento = historial[historial.length - 1];
+  let estadoPago: EstadoPago = "pendiente";
+  let pagadoEn: string | undefined;
+  let vencimiento: string | undefined;
+
+  if (base.estado === "cancelado") {
+    // Si ya se había cobrado (pago anticipado), el dinero se devuelve.
+    estadoPago = momento === "entrega" ? "pendiente" : "reembolsado";
+  } else if (momento === "anticipado") {
+    estadoPago = "pagado";
+    pagadoEn = base.fecha;
+  } else if (momento === "entrega") {
+    if (base.estado === "entregado") {
+      estadoPago = "pagado";
+      pagadoEn = ultimoEvento.fecha;
+    }
+  } else {
+    // Crédito: queda por cobrar, con fecha de vencimiento de la factura.
+    vencimiento = new Date(
+      new Date(base.fecha).getTime() + DIAS_CREDITO * 24 * HORA,
+    ).toISOString();
+  }
 
   return {
     ...base,
     items,
+    canal: origen.canal,
+    ...(origen.creadoPor ? { creadoPor: origen.creadoPor } : {}),
+    estadoPago,
+    ...(pagadoEn ? { pagadoEn } : {}),
+    ...(vencimiento ? { vencimiento } : {}),
     subtotal,
     impuesto,
     envio,
     total: subtotal + impuesto + envio,
-    historial: construirHistorial(base.estado, base.fecha),
+    historial,
   };
 }
 
@@ -165,7 +238,7 @@ const MOCK_PEDIDOS: Pedido[] = [
     codigo: "#1040",
     fecha: "2026-10-10T08:05:00.000Z",
     estado: "pendiente",
-    metodoPago: "Efectivo",
+    metodoPago: "Billetera digital",
     cliente: {
       nombre: "Valentina Ruiz",
       email: "valentina.ruiz@correo.com",
@@ -332,7 +405,7 @@ const MOCK_PEDIDOS: Pedido[] = [
     codigo: "#1033",
     fecha: "2026-10-08T11:02:00.000Z",
     estado: "entregado",
-    metodoPago: "Efectivo",
+    metodoPago: "Billetera digital",
     cliente: {
       nombre: "Julián Vélez",
       email: "julian.velez@correo.com",
@@ -490,7 +563,7 @@ const MOCK_PEDIDOS: Pedido[] = [
     codigo: "#1026",
     fecha: "2026-10-03T19:26:00.000Z",
     estado: "pendiente",
-    metodoPago: "Tarjeta",
+    metodoPago: "Crédito",
     cliente: {
       nombre: "Carolina Lozano",
       email: "carolina.lozano@correo.com",
@@ -515,7 +588,7 @@ const MOCK_PEDIDOS: Pedido[] = [
     codigo: "#1025",
     fecha: "2026-10-02T09:50:00.000Z",
     estado: "entregado",
-    metodoPago: "Transferencia",
+    metodoPago: "Crédito",
     cliente: {
       nombre: "Mateo Giraldo",
       email: "mateo.giraldo@correo.com",
