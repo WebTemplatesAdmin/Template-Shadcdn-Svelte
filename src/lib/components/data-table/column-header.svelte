@@ -1,4 +1,4 @@
-<!-- src/routes/(app)/productos/table/column-header.svelte -->
+<!-- src/lib/components/data-table/column-header.svelte -->
 <script lang="ts">
   import ArrowUpDown from "@lucide/svelte/icons/arrow-up-down";
   import ArrowUp from "@lucide/svelte/icons/arrow-up";

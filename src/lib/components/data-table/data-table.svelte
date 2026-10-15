@@ -81,13 +81,15 @@
     </Table.Root>
   </div>
 
-  <div class="flex items-center justify-between pt-4">
-    <div class="flex-1 text-sm text-muted-foreground">
+  <div
+    class="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between"
+  >
+    <div class="text-sm text-muted-foreground">
       {table.getFilteredSelectedRowModel().rows.length} de
       {table.getFilteredRowModel().rows.length} fila(s) seleccionadas.
     </div>
 
-    <div class="flex items-center gap-6">
+    <div class="flex flex-wrap items-center gap-x-6 gap-y-3">
       <div class="flex items-center gap-2">
         <p class="text-sm text-muted-foreground whitespace-nowrap">
           Filas por página
