@@ -15,8 +15,16 @@ import PagoCell from "./pago-cell.svelte";
 import EstadoCell from "./estado-cell.svelte";
 import PedidoAcciones from "./pedido-acciones.svelte";
 
+/** Acciones que la tabla delega a quien la usa (el estado de los pedidos vive allí). */
+export type PedidoAccionesHandlers = {
+  onVer: (pedido: Pedido) => void;
+  onAvanzar: (pedido: Pedido) => void;
+  onCobrar: (pedido: Pedido) => void;
+  onCancelar: (pedido: Pedido) => void;
+};
+
 export function createColumns(
-  onVerDetalle: (pedido: Pedido) => void,
+  handlers: PedidoAccionesHandlers,
 ): ColumnDef<DataTableFeatures, Pedido>[] {
   return [
     {
@@ -135,7 +143,7 @@ export function createColumns(
       cell: ({ row }) =>
         renderComponent(PedidoAcciones, {
           pedido: row.original,
-          onVer: onVerDetalle,
+          ...handlers,
         }),
     },
   ];
