@@ -5,7 +5,7 @@ import { renderSnippet, renderComponent } from "@tanstack/svelte-table";
 import { createRawSnippet } from "svelte";
 import { Checkbox } from "$lib/components/ui/checkbox/index.js";
 import DataTableActions from "./data-table-actions.svelte";
-import ColumnHeader from "./column-header.svelte";
+import ColumnHeader from "$lib/components/data-table/column-header.svelte";
 import ProductCell from "./product-cell.svelte";
 import StockCell from "./stock-cell.svelte";
 import type { Producto } from "$lib/types/producto";
