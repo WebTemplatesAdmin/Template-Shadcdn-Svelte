@@ -8,11 +8,13 @@
   import { Button } from "$lib/components/ui/button/index.js";
   import { ConfirmDialog } from "$lib/components/ui/confirm-dialog/index.js";
   import Download from "@lucide/svelte/icons/download";
+  import Plus from "@lucide/svelte/icons/plus";
+  import { goto } from "$app/navigation";
   import PedidoDetail from "./detail/pedido-detail.svelte";
   import { createColumns } from "./table/columns";
   import { METODOS_PAGO } from "$lib/config/pagos";
   import { notificarAviso, notificarExito } from "$lib/utils/notify";
-  import type { EstadoPedido, Pedido } from "$lib/types/pedido";
+  import type { Comprobante, EstadoPedido, Pedido } from "$lib/types/pedido";
   import {
     aplicarCambioEstado,
     CANALES,
@@ -25,6 +27,8 @@
     formatearMonto,
     payloadCambioEstado,
     payloadCobro,
+    payloadComprobante,
+    payloadValidacionPago,
     puedeCancelar,
     puedeCobrar,
     resumenPedidos,
@@ -127,6 +131,88 @@
     );
 
     notificarExito(`${pedido.codigo} marcado como pagado`, "Cobro registrado.");
+  }
+
+  function nuevoPedido() {
+    goto("/pedidos/registrar");
+  }
+
+  /** Adjunta la evidencia: el cobro pasa a "en revisión" (no es pago aún). */
+  function adjuntarComprobante(pedido: Pedido, archivo: File) {
+    const comprobante: Comprobante = {
+      id: `CMP-${pedido.id}-${Date.now()}`,
+      archivo: archivo.name,
+      tipo: archivo.type,
+      subidoPor: "vendedor",
+      subidoEn: new Date().toISOString(),
+      monto: pedido.total,
+    };
+
+    reemplazar(pedido, {
+      ...pedido,
+      comprobante,
+      estadoPago: "en_revision",
+      pagadoEn: undefined,
+    });
+
+    // TODO: enviar a tu API → POST /pedidos/:id/comprobante
+    console.log(
+      `[pedidos] Payload (COMPROBANTE) →\n${JSON.stringify(
+        payloadComprobante(pedido, comprobante),
+        null,
+        2,
+      )}`,
+    );
+
+    notificarExito(
+      `${pedido.codigo} · comprobante adjuntado`,
+      "El cobro quedó en revisión hasta validarlo.",
+    );
+  }
+
+  /** Confirma el cobro: "en revisión" → "pagado". */
+  function validarPago(pedido: Pedido) {
+    const ahora = new Date().toISOString();
+    reemplazar(pedido, { ...pedido, estadoPago: "pagado", pagadoEn: ahora });
+
+    // TODO: enviar a tu API → PATCH /pedidos/:id/pago/validar
+    console.log(
+      `[pedidos] Payload (VALIDAR PAGO) →\n${JSON.stringify(
+        payloadValidacionPago(pedido, true, ahora),
+        null,
+        2,
+      )}`,
+    );
+
+    notificarExito(
+      `${pedido.codigo} · pago validado`,
+      "El cobro quedó confirmado.",
+    );
+  }
+
+  /** Rechaza la evidencia: vuelve a "por cobrar" y se descarta el comprobante. */
+  function rechazarPago(pedido: Pedido) {
+    const ahora = new Date().toISOString();
+    reemplazar(pedido, {
+      ...pedido,
+      comprobante: undefined,
+      estadoPago: "pendiente",
+      pagadoEn: undefined,
+    });
+
+    // TODO: enviar a tu API → PATCH /pedidos/:id/pago/validar
+    console.log(
+      `[pedidos] Payload (RECHAZAR PAGO) →\n${JSON.stringify(
+        payloadValidacionPago(pedido, false, ahora),
+        null,
+        2,
+      )}`,
+    );
+
+    notificarAviso(
+      `${pedido.codigo} · comprobante rechazado`,
+      "El pedido vuelve a quedar por cobrar.",
+    );
   }
 
   function pedirCancelacion(pedido: Pedido) {
@@ -249,6 +335,8 @@
     onAvanzar: avanzar,
     onCobrar: marcarPagado,
     onCancelar: pedirCancelacion,
+    onValidar: validarPago,
+    onRechazar: rechazarPago,
   });
 
   /** Los segmentos filtran la tabla por estado (misma fuente que la columna). */
@@ -285,23 +373,30 @@
   <DataTable data={pedidos} {columns}>
     {#snippet toolbar({ table })}
       <div class="flex w-full flex-col gap-3">
-        <ToggleGroup.Root
-          type="single"
-          variant="outline"
-          size="sm"
-          value={filtroEstado}
-          onValueChange={(valor) => filtrarPorEstado(valor, table)}
-          class="flex-wrap"
-        >
-          <ToggleGroup.Item value="todos">
-            Todos ({conteos.todos})
-          </ToggleGroup.Item>
-          {#each ESTADOS as estado}
-            <ToggleGroup.Item value={estado}>
-              {ETIQUETA_ESTADO[estado]} ({conteos[estado]})
+        <div class="flex flex-wrap items-center gap-3">
+          <ToggleGroup.Root
+            type="single"
+            variant="outline"
+            size="sm"
+            value={filtroEstado}
+            onValueChange={(valor) => filtrarPorEstado(valor, table)}
+            class="flex-wrap"
+          >
+            <ToggleGroup.Item value="todos">
+              Todos ({conteos.todos})
             </ToggleGroup.Item>
-          {/each}
-        </ToggleGroup.Root>
+            {#each ESTADOS as estado}
+              <ToggleGroup.Item value={estado}>
+                {ETIQUETA_ESTADO[estado]} ({conteos[estado]})
+              </ToggleGroup.Item>
+            {/each}
+          </ToggleGroup.Root>
+
+          <Button size="sm" class="md:ml-auto" onclick={nuevoPedido}>
+            <Plus data-icon="inline-start" />
+            Nuevo pedido
+          </Button>
+        </div>
 
         <div
           class="flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center"
@@ -385,7 +480,12 @@
         </Sheet.Description>
       </Sheet.Header>
 
-      <PedidoDetail pedido={pedidoSeleccionado} />
+      <PedidoDetail
+        pedido={pedidoSeleccionado}
+        onAdjuntarComprobante={adjuntarComprobante}
+        onValidarPago={validarPago}
+        onRechazarPago={rechazarPago}
+      />
 
       <Sheet.Footer class="flex-wrap gap-2">
         {#if siguienteDelDetalle}

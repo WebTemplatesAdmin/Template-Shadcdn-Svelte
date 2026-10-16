@@ -8,6 +8,8 @@
     ETIQUETA_ESTADO,
     puedeCancelar,
     puedeCobrar,
+    puedeRechazarComprobante,
+    puedeValidarComprobante,
     siguienteEstado,
   } from "$lib/utils/pedido";
 
@@ -17,12 +19,16 @@
     onAvanzar,
     onCobrar,
     onCancelar,
+    onValidar,
+    onRechazar,
   }: {
     pedido: Pedido;
     onVer: (pedido: Pedido) => void;
     onAvanzar: (pedido: Pedido) => void;
     onCobrar: (pedido: Pedido) => void;
     onCancelar: (pedido: Pedido) => void;
+    onValidar: (pedido: Pedido) => void;
+    onRechazar: (pedido: Pedido) => void;
   } = $props();
 
   const siguiente = $derived(siguienteEstado(pedido.estado));
@@ -54,6 +60,16 @@
       {#if puedeCobrar(pedido)}
         <DropdownMenu.Item onclick={() => onCobrar(pedido)}>
           Marcar como pagado
+        </DropdownMenu.Item>
+      {/if}
+      {#if puedeValidarComprobante(pedido)}
+        <DropdownMenu.Item onclick={() => onValidar(pedido)}>
+          Validar pago
+        </DropdownMenu.Item>
+      {/if}
+      {#if puedeRechazarComprobante(pedido)}
+        <DropdownMenu.Item onclick={() => onRechazar(pedido)}>
+          Rechazar comprobante
         </DropdownMenu.Item>
       {/if}
     </DropdownMenu.Group>

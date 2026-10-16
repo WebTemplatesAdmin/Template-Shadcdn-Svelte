@@ -1,12 +1,26 @@
 // src/lib/utils/pedido.ts
 // Helpers de dominio para pedidos. Mismo enfoque que $lib/utils/producto.ts.
-import { MOMENTO_COBRO } from "$lib/config/pagos";
+import {
+  BILLETERAS_VIRTUALES,
+  METODOS_CON_COMPROBANTE,
+  MOMENTO_COBRO,
+  PAIS_BILLETERA,
+} from "$lib/config/pagos";
 import type {
+  BilleteraVirtual,
   CanalPedido,
+  Comprobante,
   EstadoPago,
   EstadoPedido,
+  ItemPedido,
+  MetodoPago,
   Pedido,
 } from "$lib/types/pedido";
+
+/** Tasa de IVA aplicada en la plantilla (19%). */
+export const TASA_IVA = 0.19;
+/** Costo de envío por defecto. */
+export const ENVIO_ESTANDAR = 7000;
 
 /** Orden del flujo. Fuera de él queda "cancelado". */
 export const ORDEN_ESTADOS: EstadoPedido[] = [
@@ -49,6 +63,7 @@ export const CANALES: CanalPedido[] = [
 /** Estado del cobro ("pendiente" se muestra como "Por cobrar"). */
 export const ETIQUETA_PAGO: Record<EstadoPago, string> = {
   pendiente: "Por cobrar",
+  en_revision: "En revisión",
   pagado: "Pagado",
   reembolsado: "Reembolsado",
 };
@@ -60,6 +75,10 @@ export const ESTILO_PAGO: Record<
   pendiente: {
     variante: "outline",
     clase: "border-amber-500/40 bg-amber-500/10 text-amber-600",
+  },
+  en_revision: {
+    variante: "outline",
+    clase: "border-sky-500/40 bg-sky-500/10 text-sky-600",
   },
   pagado: {
     variante: "outline",
@@ -109,6 +128,37 @@ export function puedeCobrar(pedido: Pedido): boolean {
 }
 
 /**
+ * El método ADMITE comprobante opcional (transferencia, link de pago,
+ * billetera virtual). Nunca es obligatorio: solo habilita adjuntarlo.
+ */
+export function admiteComprobante(metodo: MetodoPago): boolean {
+  return METODOS_CON_COMPROBANTE.includes(metodo);
+}
+
+/** Etiqueta del método; las billeteras virtuales incluyen su país. */
+export function etiquetaMetodo(metodo: MetodoPago): string {
+  if (BILLETERAS_VIRTUALES.includes(metodo as BilleteraVirtual)) {
+    return `${metodo} (${PAIS_BILLETERA[metodo as BilleteraVirtual]})`;
+  }
+  return metodo;
+}
+
+/** Se puede adjuntar comprobante si el pedido no está cancelado ni ya pagado. */
+export function puedeAdjuntarComprobante(pedido: Pedido): boolean {
+  return pedido.estado !== "cancelado" && pedido.estadoPago !== "pagado";
+}
+
+/** Hay un comprobante esperando validación (evidencia ≠ cobro). */
+export function puedeValidarComprobante(pedido: Pedido): boolean {
+  return pedido.estadoPago === "en_revision";
+}
+
+/** Un comprobante en revisión también se puede rechazar. */
+export function puedeRechazarComprobante(pedido: Pedido): boolean {
+  return pedido.estadoPago === "en_revision";
+}
+
+/**
  * Reglas de negocio al mover un pedido de estado:
  * - cancelar un pedido ya cobrado ⇒ queda reembolsado;
  * - entregar un pedido con cobro contra entrega ⇒ queda pagado.
@@ -155,6 +205,33 @@ export function payloadCobro(pedido: Pedido, pagadoEn: string) {
   };
 }
 
+/** Contrato con tu API: POST /pedidos/:id/comprobante */
+export function payloadComprobante(pedido: Pedido, comprobante: Comprobante) {
+  return {
+    id: pedido.id,
+    codigo: pedido.codigo,
+    comprobante,
+  };
+}
+
+/**
+ * Contrato con tu API: PATCH /pedidos/:id/pago/validar
+ * `aprobado: true` confirma el cobro; `false` lo rechaza (vuelve a por cobrar).
+ */
+export function payloadValidacionPago(
+  pedido: Pedido,
+  aprobado: boolean,
+  ahora: string,
+) {
+  return {
+    id: pedido.id,
+    codigo: pedido.codigo,
+    aprobado,
+    estadoPago: (aprobado ? "pagado" : "pendiente") as EstadoPago,
+    ...(aprobado ? { pagadoEn: ahora } : {}),
+  };
+}
+
 /** Unidades totales: suma de cantidades. */
 export function totalUnidades(pedido: Pedido): number {
   return pedido.items.reduce((total, item) => total + item.cantidad, 0);
@@ -163,6 +240,22 @@ export function totalUnidades(pedido: Pedido): number {
 /** Líneas distintas del pedido. */
 export function contarArticulos(pedido: Pedido): number {
   return pedido.items.length;
+}
+
+/**
+ * Calcula los montos de un pedido. Fuente única del IVA y el envío: la usan
+ * tanto los mocks como el formulario de alta, para que el total nunca difiera.
+ */
+export function calcularTotales(
+  items: ItemPedido[],
+  envio: number,
+): { subtotal: number; impuesto: number; envio: number; total: number } {
+  const subtotal = items.reduce(
+    (total, item) => total + item.cantidad * item.precioUnitario,
+    0,
+  );
+  const impuesto = Math.round(subtotal * TASA_IVA);
+  return { subtotal, impuesto, envio, total: subtotal + impuesto + envio };
 }
 
 /** Montos del mock en COP. */
