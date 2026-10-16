@@ -10,7 +10,11 @@
   import ArrowLeft from "@lucide/svelte/icons/arrow-left";
   import Plus from "@lucide/svelte/icons/plus";
   import Trash2 from "@lucide/svelte/icons/trash-2";
-  import { productoSchema, type ProductoSchema } from "../schemas/schema";
+  import {
+    construirPayloadProducto,
+    productoSchema,
+    type ProductoSchema,
+  } from "../schemas/schema";
   import { CATEGORIAS } from "$lib/config/categorias";
   import EventoItem from "../detail/evento-item.svelte";
   import * as Dialog from "$lib/components/ui/dialog/index.js";
@@ -25,6 +29,8 @@
   import X from "@lucide/svelte/icons/x";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
   import Gauge from "@lucide/svelte/icons/gauge";
+  import Braces from "@lucide/svelte/icons/braces";
+  import Copy from "@lucide/svelte/icons/copy";
   import type { EventoProducto } from "$lib/types/producto";
   import {
     calcularMargen,
@@ -43,6 +49,7 @@
     historial,
     enlaceHistorial,
     modo = "crear",
+    productoId,
   }: {
     form: SuperValidated<Infer<ProductoSchema>>;
     titulo: string;
@@ -52,6 +59,8 @@
     enlaceHistorial?: string;
     /** "crear" = alta (todo editable) · "editar" = bloquea campos de identidad */
     modo?: "crear" | "editar";
+    /** En edición, el id se incluye en el payload para tu API. */
+    productoId?: number;
   } = $props();
 
   // En edición se bloquean los campos que definen la identidad del producto.
@@ -82,6 +91,14 @@
   });
 
   const { form: formData, enhance, submitting } = form;
+
+  let dialogJsonAbierto = $state(false);
+
+  // Vista previa en vivo del contrato: usa el MISMO builder que el servidor,
+  // así lo que se ve aquí es exactamente lo que recibirá tu API.
+  const payloadJson = $derived(
+    JSON.stringify(construirPayloadProducto($formData, productoId), null, 2),
+  );
 
   let inputArchivos: HTMLInputElement | null = $state(null);
   let inputImagenPresentacion: HTMLInputElement | null = $state(null);
@@ -225,6 +242,15 @@
         previo ?? { sku: "", opciones, price: $formData.price || 0, stock: 0 }
       );
     });
+  }
+
+  async function copiarPayload() {
+    try {
+      await navigator.clipboard.writeText(payloadJson);
+      notificarExito("JSON copiado", "El payload quedó en tu portapapeles.");
+    } catch {
+      notificarError("No se pudo copiar", "Copia el texto manualmente.");
+    }
   }
 
   function eliminarVariante(index: number) {
@@ -1218,6 +1244,14 @@
   class="sticky bottom-0 -mx-4 -mb-4 border-t bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:-mx-6 md:-mb-6 md:px-6 lg:-mx-8 lg:-mb-8 lg:px-8"
 >
   <div class="mx-auto flex max-w-5xl items-center justify-end gap-3 py-4">
+    <Button
+      type="button"
+      variant="ghost"
+      onclick={() => (dialogJsonAbierto = true)}
+    >
+      <Braces data-icon="inline-start" />
+      Ver JSON
+    </Button>
     <Button type="button" variant="outline" href="/productos">Cancelar</Button>
     <Button
       type="submit"
@@ -1262,6 +1296,38 @@
       </Button>
       <Button type="button" onclick={crearCategoria}>Crear y seleccionar</Button
       >
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
+
+<!-- Vista previa del contrato de datos (el JSON que recibe tu backend). -->
+<Dialog.Root bind:open={dialogJsonAbierto}>
+  <Dialog.Content class="sm:max-w-2xl">
+    <Dialog.Header>
+      <Dialog.Title>Payload para tu API</Dialog.Title>
+      <Dialog.Description>
+        JSON que se enviará a tu backend con {modo === "editar"
+          ? "PUT /productos/:id"
+          : "POST /productos"}.
+      </Dialog.Description>
+    </Dialog.Header>
+
+    <div class="max-h-[60vh] overflow-auto rounded-md border bg-muted/50 p-4">
+      <pre class="text-xs leading-relaxed"><code>{payloadJson}</code></pre>
+    </div>
+
+    <Dialog.Footer>
+      <Button
+        type="button"
+        variant="outline"
+        onclick={() => (dialogJsonAbierto = false)}
+      >
+        Cerrar
+      </Button>
+      <Button type="button" onclick={copiarPayload}>
+        <Copy data-icon="inline-start" />
+        Copiar JSON
+      </Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>

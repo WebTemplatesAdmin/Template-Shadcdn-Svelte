@@ -28,6 +28,7 @@
       `/productos/${data.id}/editar`,
     )}`}
     modo="editar"
+    productoId={data.id}
   />
 {:catch}
   <div class="mx-auto max-w-5xl py-20 text-center">
