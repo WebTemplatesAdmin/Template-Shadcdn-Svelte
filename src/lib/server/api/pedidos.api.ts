@@ -9,9 +9,11 @@
  * ============================================================
  */
 import { DIAS_CREDITO, MOMENTO_COBRO } from "$lib/config/pagos";
-import { ORDEN_ESTADOS } from "$lib/utils/pedido";
+import { calcularTotales, ENVIO_ESTANDAR, ORDEN_ESTADOS } from "$lib/utils/pedido";
 import type {
   CanalPedido,
+  Comprobante,
+  DatosPago,
   EstadoPago,
   EstadoPedido,
   EventoEstado,
@@ -22,8 +24,6 @@ import type {
 export type { Pedido };
 
 const HORA = 60 * 60 * 1000;
-const IVA = 0.19;
-const ENVIO_ESTANDAR = 7000;
 
 /** En el mock se escribe el nombre; el id del catálogo se resuelve al crear. */
 type ItemBase = Omit<ItemPedido, "productoId">;
@@ -99,6 +99,40 @@ const VARIANTE_POR_NOMBRE: Record<string, string> = {
   "Agua Cristal 1.5L": "CRISTAL-1500",
 };
 
+/**
+ * Comprobante de ejemplo en revisión: demuestra que "evidencia ≠ cobro".
+ * El pedido #1039 (transferencia) queda con el cobro por validar.
+ * Con tu API real, esto llega desde tu backend.
+ */
+const COMPROBANTE_POR_ID: Record<number, Omit<Comprobante, "monto">> = {
+  1039: {
+    id: "CMP-1039",
+    archivo: "transferencia-1039.pdf",
+    tipo: "application/pdf",
+    subidoPor: "cliente",
+    subidoEn: "2026-10-09T18:30:00.000Z",
+    referencia: "TRF-8842019",
+  },
+};
+
+/**
+ * Datos de cobro de ejemplo (transacción y, en tarjeta, sus datos).
+ * Con tu API real, esto llega desde tu backend.
+ */
+const PAGO_POR_ID: Record<number, DatosPago> = {
+  1034: { transaccionId: "TRX-556201" }, // transferencia
+  1030: {
+    transaccionId: "TRX-771903",
+    tarjeta: {
+      marca: "Visa",
+      ultimos4: "4412",
+      titular: "Sofía Arango",
+      vencimiento: "08/28",
+    },
+  },
+  1036: { transaccionId: "REC-2201" }, // efectivo (nro. de recibo)
+};
+
 /** Seguimiento coherente con el estado actual (la línea de tiempo del detalle). */
 function construirHistorial(
   estado: EstadoPedido,
@@ -133,12 +167,8 @@ function crearPedido(base: PedidoBase): Pedido {
     };
   });
 
-  const subtotal = items.reduce(
-    (total, item) => total + item.cantidad * item.precioUnitario,
-    0,
-  );
-  const impuesto = Math.round(subtotal * IVA);
   const envio = base.envio ?? ENVIO_ESTANDAR;
+  const totales = calcularTotales(items, envio);
   const historial = construirHistorial(base.estado, base.fecha);
   const origen = ORIGEN_POR_ID[base.id] ?? { canal: "web" as CanalPedido };
 
@@ -167,18 +197,30 @@ function crearPedido(base: PedidoBase): Pedido {
     ).toISOString();
   }
 
+  // Comprobante de ejemplo: el cobro queda EN REVISIÓN hasta validarse.
+  const comprobanteBase = COMPROBANTE_POR_ID[base.id];
+  const comprobante: Comprobante | undefined = comprobanteBase
+    ? { ...comprobanteBase, monto: totales.total }
+    : undefined;
+  if (comprobante && base.estado !== "cancelado") {
+    estadoPago = "en_revision";
+    pagadoEn = undefined;
+    vencimiento = undefined;
+  }
+
+  const pago = PAGO_POR_ID[base.id];
+
   return {
     ...base,
     items,
     canal: origen.canal,
     ...(origen.creadoPor ? { creadoPor: origen.creadoPor } : {}),
     estadoPago,
+    ...(pago ? { pago } : {}),
+    ...(comprobante ? { comprobante } : {}),
     ...(pagadoEn ? { pagadoEn } : {}),
     ...(vencimiento ? { vencimiento } : {}),
-    subtotal,
-    impuesto,
-    envio,
-    total: subtotal + impuesto + envio,
+    ...totales,
     historial,
   };
 }
@@ -238,7 +280,7 @@ const MOCK_PEDIDOS: Pedido[] = [
     codigo: "#1040",
     fecha: "2026-10-10T08:05:00.000Z",
     estado: "pendiente",
-    metodoPago: "Billetera digital",
+    metodoPago: "Nequi",
     cliente: {
       nombre: "Valentina Ruiz",
       email: "valentina.ruiz@correo.com",
@@ -405,7 +447,7 @@ const MOCK_PEDIDOS: Pedido[] = [
     codigo: "#1033",
     fecha: "2026-10-08T11:02:00.000Z",
     estado: "entregado",
-    metodoPago: "Billetera digital",
+    metodoPago: "Daviplata",
     cliente: {
       nombre: "Julián Vélez",
       email: "julian.velez@correo.com",

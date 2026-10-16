@@ -21,6 +21,8 @@ export type PedidoAccionesHandlers = {
   onAvanzar: (pedido: Pedido) => void;
   onCobrar: (pedido: Pedido) => void;
   onCancelar: (pedido: Pedido) => void;
+  onValidar: (pedido: Pedido) => void;
+  onRechazar: (pedido: Pedido) => void;
 };
 
 export function createColumns(
