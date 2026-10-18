@@ -28,6 +28,7 @@
     notasDeCliente,
     tarjetasDeCliente,
   } from "$lib/state/clientes.svelte";
+  import BotonLlamada from "./boton-llamada.svelte";
   import ComunicacionesPanel from "./comunicaciones/comunicaciones-panel.svelte";
   import ComunicacionDialog from "./comunicaciones/comunicacion-dialog.svelte";
   import NotaDialog from "./nota-dialog.svelte";
@@ -171,6 +172,7 @@
           {datos.email || "Sin email"}
         </p>
       </div>
+      <BotonLlamada cliente={datos} />
     </div>
 
     <!-- Datos de contacto -->
