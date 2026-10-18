@@ -14,7 +14,7 @@
     {#await data.pedidos}
       <DataTableSkeleton columnas={9} filas={15} />
     {:then pedidos}
-      <PedidosView pedidosIniciales={pedidos} />
+      <PedidosView pedidosIniciales={pedidos} verInicial={data.ver} />
     {:catch}
       <div class="mx-auto max-w-5xl py-20 text-center">
         <p class="text-sm text-muted-foreground">

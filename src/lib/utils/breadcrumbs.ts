@@ -35,6 +35,12 @@ const breadcrumbsConfig: Record<string, BreadcrumbItem[]> = {
     { label: "Pedidos", href: "/pedidos" },
     { label: "Nuevo pedido" },
   ],
+  "/clientes": [{ label: "Gestión", href: "/" }, { label: "Clientes" }],
+  "/clientes/:id": [
+    { label: "Gestión", href: "/" },
+    { label: "Clientes", href: "/clientes" },
+    { label: "Perfil del cliente" },
+  ],
   "/ventas": [{ label: "Gestión", href: "/" }, { label: "Ventas" }],
   "/usuarios": [{ label: "Gestión", href: "/" }, { label: "Usuarios" }],
   "/configuracion": [{ label: "Sistema", href: "/" }, { label: "Configuración" }],

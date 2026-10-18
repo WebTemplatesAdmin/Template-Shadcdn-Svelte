@@ -44,6 +44,11 @@
   import type { Cliente } from "$lib/types/cliente";
   import type { TarjetaGuardada } from "$lib/types/tarjeta";
   import {
+    crearTarjeta,
+    MARCAS_TARJETA,
+    resumenTarjeta,
+  } from "$lib/utils/tarjeta";
+  import {
     clientesCreados,
     registrarClienteCreado,
     registrarTarjetaCreada,
@@ -83,15 +88,6 @@
   const totales = $derived(
     calcularTotales($formData.items, Number($formData.envio) || 0),
   );
-
-  /** Marcas de tarjeta (ajústalas a tu país/pasarela). */
-  const MARCAS_TARJETA = [
-    "Visa",
-    "Mastercard",
-    "American Express",
-    "Diners Club",
-    "Otra",
-  ];
 
   // ============ Cliente (desde la lista; se puede crear al vuelo) ============
   let clientePopoverAbierto = $state(false);
@@ -171,10 +167,6 @@
       : null,
   );
 
-  function resumenTarjeta(tarjeta: TarjetaGuardada): string {
-    return `${tarjeta.marca ? tarjeta.marca + " " : ""}•••• ${tarjeta.ultimos4} · vence ${tarjeta.vencimiento}`;
-  }
-
   function aplicarTarjeta(tarjeta: TarjetaGuardada) {
     $formData.tarjetaId = tarjeta.id;
     $formData.tarjetaMarca = tarjeta.marca ?? "";
@@ -219,17 +211,12 @@
       return;
     }
 
-    const tarjeta: TarjetaGuardada = {
-      id: `TAR-${cliente.id}-${Date.now()}`,
-      clienteId: cliente.id,
-      ...($formData.tarjetaMarca ? { marca: $formData.tarjetaMarca } : {}),
+    const tarjeta = crearTarjeta(cliente.id, {
+      marca: $formData.tarjetaMarca || undefined,
       ultimos4: $formData.tarjetaUltimos4,
-      titular: $formData.tarjetaTitular.trim(),
+      titular: $formData.tarjetaTitular,
       vencimiento: $formData.tarjetaVencimiento,
-      // Demo: la pasarela devolvería este token al tokenizar la tarjeta.
-      token: `tok_${($formData.tarjetaMarca || "card").toLowerCase()}_${$formData.tarjetaUltimos4}`,
-      creadaEn: new Date().toISOString(),
-    };
+    });
 
     registrarTarjetaCreada(tarjeta);
     aplicarTarjeta(tarjeta);
