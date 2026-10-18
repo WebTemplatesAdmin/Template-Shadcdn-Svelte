@@ -38,12 +38,21 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       badge: "12",
     },
     {
+      id_menu: 8,
+      titulo: "Clientes",
+      url: "/clientes",
+      icono: "Users2",
+      seccion: "Gestión",
+      orden: 3,
+      badge: null,
+    },
+    {
       id_menu: 4,
       titulo: "Ventas",
       url: "/ventas",
       icono: "TrendingUp",
       seccion: "Gestión",
-      orden: 3,
+      orden: 4,
       badge: null,
     },
     {
@@ -52,7 +61,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       url: "/usuarios",
       icono: "Users",
       seccion: "Gestión",
-      orden: 4,
+      orden: 5,
       badge: null,
     },
 

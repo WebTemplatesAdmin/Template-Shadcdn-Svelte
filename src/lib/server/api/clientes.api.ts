@@ -12,6 +12,13 @@ import type { Cliente } from "$lib/types/cliente";
 
 export type { Cliente };
 
+const DIA = 24 * 60 * 60 * 1000;
+
+/** Fecha relativa a hoy para que la bitácora siempre se vea vigente. */
+function hace(dias: number): string {
+  return new Date(Date.now() - dias * DIA).toISOString();
+}
+
 /** Coherentes con los clientes que aparecen en `pedidos.api.ts`. */
 const MOCK_CLIENTES: Cliente[] = [
   {
@@ -32,6 +39,49 @@ const MOCK_CLIENTES: Cliente[] = [
         token: "tok_visa_4412",
         predeterminada: true,
         creadaEn: "2026-08-12T14:22:00.000Z",
+      },
+    ],
+    notas: [
+      {
+        id: "NOT-1-B",
+        clienteId: 1,
+        tipo: "nota",
+        contenido: "Prefiere entregas los sábados por la mañana.",
+        autor: "Juan Pérez",
+        creadoEn: hace(9),
+      },
+    ],
+    comunicaciones: [
+      {
+        id: "COM-1-A",
+        clienteId: 1,
+        canal: "llamada",
+        direccion: "saliente",
+        resultado: "contactado",
+        duracionSegundos: 200,
+        contenido: "Se confirmó la dirección y el horario de entrega.",
+        autor: "Juan Pérez",
+        creadoEn: hace(2),
+      },
+      {
+        id: "COM-1-B",
+        clienteId: 1,
+        canal: "whatsapp",
+        direccion: "entrante",
+        resultado: "contactado",
+        contenido: "Envió el comprobante de pago por WhatsApp.",
+        autor: "Juan Pérez",
+        creadoEn: hace(3),
+      },
+      {
+        id: "COM-1-C",
+        clienteId: 1,
+        canal: "chat",
+        direccion: "saliente",
+        resultado: "contactado",
+        contenido: "Respondió dudas sobre el tiempo de entrega.",
+        autor: "Juan Pérez",
+        creadoEn: hace(8),
       },
     ],
     creadoEn: "2026-08-12T14:20:00.000Z",
@@ -56,6 +106,58 @@ const MOCK_CLIENTES: Cliente[] = [
         creadaEn: "2026-08-15T09:08:00.000Z",
       },
     ],
+    notas: [
+      {
+        id: "NOT-2-A",
+        clienteId: 2,
+        tipo: "restriccion",
+        contenido:
+          "No recibir llamadas antes de las 10:00 a.m. Contactar por WhatsApp.",
+        autor: "Juan Pérez",
+        creadoEn: hace(15),
+      },
+      {
+        id: "NOT-2-B",
+        clienteId: 2,
+        tipo: "nota",
+        contenido:
+          "Paga siempre por transferencia; enviar el comprobante al correo.",
+        autor: "Juan Pérez",
+        creadoEn: hace(20),
+      },
+    ],
+    comunicaciones: [
+      {
+        id: "COM-2-A",
+        clienteId: 2,
+        canal: "llamada",
+        direccion: "entrante",
+        resultado: "sin_respuesta",
+        contenido: "No contestó; se dejó mensaje de voz.",
+        autor: "Juan Pérez",
+        creadoEn: hace(15),
+      },
+      {
+        id: "COM-2-B",
+        clienteId: 2,
+        canal: "email",
+        direccion: "saliente",
+        resultado: "contactado",
+        contenido: "Se envió la factura y el enlace de pago.",
+        autor: "Juan Pérez",
+        creadoEn: hace(18),
+      },
+      {
+        id: "COM-2-C",
+        clienteId: 2,
+        canal: "whatsapp",
+        direccion: "entrante",
+        resultado: "contactado",
+        contenido: "Confirmó el pago por transferencia.",
+        autor: "Juan Pérez",
+        creadoEn: hace(19),
+      },
+    ],
     creadoEn: "2026-08-15T09:05:00.000Z",
   },
   {
@@ -65,6 +167,30 @@ const MOCK_CLIENTES: Cliente[] = [
     telefono: "+57 304 771 2233",
     direccion: "Av. 68 #45-10, Bogotá",
     ciudad: "Bogotá",
+    comunicaciones: [
+      {
+        id: "COM-3-A",
+        clienteId: 3,
+        canal: "llamada",
+        direccion: "saliente",
+        resultado: "contactado",
+        duracionSegundos: 300,
+        contenido:
+          "Se le ofreció el catálogo nuevo; retoma la próxima semana.",
+        autor: "Juan Pérez",
+        creadoEn: hace(4),
+      },
+      {
+        id: "COM-3-B",
+        clienteId: 3,
+        canal: "whatsapp",
+        direccion: "saliente",
+        resultado: "contactado",
+        contenido: "Se envió el catálogo por WhatsApp.",
+        autor: "Juan Pérez",
+        creadoEn: hace(5),
+      },
+    ],
     creadoEn: "2026-08-20T16:40:00.000Z",
   },
   {
@@ -110,6 +236,29 @@ const MOCK_CLIENTES: Cliente[] = [
     telefono: "+57 320 118 5527",
     direccion: "Av. Boyacá #12-33, Bogotá",
     ciudad: "Bogotá",
+    notas: [
+      {
+        id: "NOT-8-A",
+        clienteId: 8,
+        tipo: "restriccion",
+        contenido:
+          "No despachar contra entrega: confirmar el pago antes de enviar.",
+        autor: "Juan Pérez",
+        creadoEn: hace(6),
+      },
+    ],
+    comunicaciones: [
+      {
+        id: "COM-8-A",
+        clienteId: 8,
+        canal: "llamada",
+        direccion: "entrante",
+        resultado: "ocupado",
+        contenido: "Llamó y colgó; se devolvió la llamada sin respuesta.",
+        autor: "Juan Pérez",
+        creadoEn: hace(6),
+      },
+    ],
     creadoEn: "2026-09-03T18:05:00.000Z",
   },
   {
@@ -146,6 +295,28 @@ const MOCK_CLIENTES: Cliente[] = [
     telefono: "+57 300 445 6621",
     direccion: "Calle 15 #9-77, Manizales",
     ciudad: "Manizales",
+    notas: [
+      {
+        id: "NOT-12-A",
+        clienteId: 12,
+        tipo: "nota",
+        contenido: "Cliente recurrente; aplica descuento por volumen.",
+        autor: "Juan Pérez",
+        creadoEn: hace(12),
+      },
+    ],
+    comunicaciones: [
+      {
+        id: "COM-12-A",
+        clienteId: 12,
+        canal: "whatsapp",
+        direccion: "entrante",
+        resultado: "contactado",
+        contenido: "Pidió cotización por volumen.",
+        autor: "Juan Pérez",
+        creadoEn: hace(12),
+      },
+    ],
     creadoEn: "2026-09-12T13:35:00.000Z",
   },
   {

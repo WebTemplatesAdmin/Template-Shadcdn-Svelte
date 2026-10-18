@@ -9,7 +9,8 @@
   import { ConfirmDialog } from "$lib/components/ui/confirm-dialog/index.js";
   import Download from "@lucide/svelte/icons/download";
   import Plus from "@lucide/svelte/icons/plus";
-  import { goto } from "$app/navigation";
+  import { goto, replaceState } from "$app/navigation";
+  import { page } from "$app/state";
   import PedidoDetail from "./detail/pedido-detail.svelte";
   import { createColumns } from "./table/columns";
   import { METODOS_PAGO } from "$lib/config/pagos";
@@ -35,7 +36,22 @@
     siguienteEstado,
   } from "$lib/utils/pedido";
 
-  let { pedidosIniciales }: { pedidosIniciales: Pedido[] } = $props();
+  let {
+    pedidosIniciales,
+    verInicial = null,
+  }: {
+    pedidosIniciales: Pedido[];
+    /** Id del pedido a abrir desde /pedidos?ver=ID. */
+    verInicial?: number | null;
+  } = $props();
+
+  /**
+   * Retorno contextual (ej. /clientes/1). Vive en estado local para poder
+   * limpiarlo al cerrar el panel: así un detalle abierto después desde la
+   * tabla no hereda el "Volver al cliente" de una visita anterior.
+   */
+  // svelte-ignore state_referenced_locally
+  let volver = $state<string | null>(page.url.searchParams.get("volver"));
 
   /**
    * Sin backend, los cambios viven en memoria (se pierden al recargar).
@@ -45,8 +61,12 @@
   let pedidos = $state<Pedido[]>(pedidosIniciales);
 
   let filtroEstado = $state<EstadoPedido | "todos">("todos");
-  let pedidoSeleccionadoId = $state<number | null>(null);
-  let sheetAbierto = $state(false);
+
+  // svelte-ignore state_referenced_locally: el detalle inicial viene de la URL.
+  const pedidoInicial =
+    pedidosIniciales.find((pedido) => pedido.id === verInicial) ?? null;
+  let pedidoSeleccionadoId = $state<number | null>(pedidoInicial?.id ?? null);
+  let sheetAbierto = $state(pedidoInicial !== null);
   let confirmarCancelacion = $state(false);
   let pedidoACancelar: Pedido | null = $state(null);
 
@@ -81,6 +101,20 @@
   function verDetalle(pedido: Pedido) {
     pedidoSeleccionadoId = pedido.id;
     sheetAbierto = true;
+    replaceState(urlDetalle(pedido.id), {});
+  }
+
+  /** Enlace compartible al detalle: /pedidos?ver=ID (+ ?volver= contextual). */
+  function urlDetalle(id: number | null): URL {
+    const url = new URL(page.url);
+    // Se limpian siempre para no arrastrar el contexto de una visita anterior.
+    url.searchParams.delete("ver");
+    url.searchParams.delete("volver");
+    if (id != null) {
+      url.searchParams.set("ver", String(id));
+      if (volver) url.searchParams.set("volver", volver);
+    }
+    return url;
   }
 
   /** Reemplaza el pedido en la lista conservando la reactividad. */
@@ -469,7 +503,15 @@
   </DataTable>
 </div>
 
-<Sheet.Root bind:open={sheetAbierto}>
+<Sheet.Root
+  bind:open={sheetAbierto}
+  onOpenChange={(abierto) => {
+    if (!abierto) {
+      volver = null;
+      replaceState(urlDetalle(null), {});
+    }
+  }}
+>
   <Sheet.Content side="right" class="w-full sm:max-w-md">
     {#if pedidoSeleccionado}
       <Sheet.Header>
@@ -508,6 +550,9 @@
           >
             Cancelar
           </Button>
+        {/if}
+        {#if volver}
+          <Button variant="outline" href={volver}>Volver al cliente</Button>
         {/if}
         <Sheet.Close>
           {#snippet child({ props })}
