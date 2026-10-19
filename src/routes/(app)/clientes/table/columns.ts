@@ -13,6 +13,19 @@ export type ClienteAccionesHandlers = {
   onVer: (cliente: ClienteResumen) => void;
 };
 
+/** Rango numérico usado por los filtros de total comprado y pedidos. */
+export type RangoNumerico = {
+  min: number | null;
+  max: number | null;
+};
+
+/** Devuelve true si el valor cae dentro del rango (extremos opcionales). */
+export function dentroDeRango(valor: number, rango: RangoNumerico): boolean {
+  if (rango.min !== null && valor < rango.min) return false;
+  if (rango.max !== null && valor > rango.max) return false;
+  return true;
+}
+
 export function createColumns(
   handlers: ClienteAccionesHandlers,
 ): ColumnDef<DataTableFeatures, ClienteResumen>[] {
@@ -56,6 +69,11 @@ export function createColumns(
       accessorFn: (row) => row.ciudad ?? "—",
       header: ({ column }) =>
         renderComponent(ColumnHeader, { column, title: "Ciudad" }),
+      enableColumnFilter: true,
+      filterFn: (row, _columnId, filterValue: string) => {
+        if (!filterValue || filterValue === "todas") return true;
+        return (row.original.ciudad ?? "").trim() === filterValue;
+      },
     },
     {
       id: "tarjetas",
@@ -67,11 +85,17 @@ export function createColumns(
       accessorKey: "pedidos",
       header: ({ column }) =>
         renderComponent(ColumnHeader, { column, title: "Pedidos" }),
+      enableColumnFilter: true,
+      filterFn: (row, _columnId, filterValue: RangoNumerico | undefined) =>
+        !filterValue || dentroDeRango(row.original.pedidos, filterValue),
     },
     {
       accessorKey: "totalComprado",
       header: ({ column }) =>
         renderComponent(ColumnHeader, { column, title: "Total comprado" }),
+      enableColumnFilter: true,
+      filterFn: (row, _columnId, filterValue: RangoNumerico | undefined) =>
+        !filterValue || dentroDeRango(row.original.totalComprado, filterValue),
       cell: ({ row }) => {
         const texto = formatearMonto(row.original.totalComprado);
         const raw = createRawSnippet<[]>(() => ({
